@@ -23,8 +23,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UStaticMeshComponent* PlaneMesh = nullptr;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	USceneComponent* Scene = nullptr;
 
 	bool bIsSpeedUp = false;
 
@@ -37,7 +35,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxForwardSpeed = 2000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float AccelerationSpeed = 600;
+	float AccelerationSpeed = 500;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float FallingAcceleration = 500;
 	//Rotation
 	UPROPERTY(BlueprintReadWrite)
 	float RotationRate = 20;
@@ -46,15 +46,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxRotationRate = 45;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float RotationAcceleration = 12.5f;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float AlignSpeed = 90.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float CoupSpeed = 90.f;
-	bool bIsAligning = false;
-	bool bIsTurnedUpsideDown = false;
-	FQuat AlignedQuat;
-	FQuat InvertedQuat;
+	float FlipSpeed = 90.f;
+	bool bIsAligningFromUpsideDown = false;
+	bool bNeedToFlip = false;
+	FQuat InitialRotationForFlip;
+	bool bIsFalling = false;
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentFlipRotation = 0.f;
+
 public:
 
 	bool bIsMovingForward = true;
