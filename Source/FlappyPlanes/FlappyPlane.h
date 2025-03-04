@@ -21,23 +21,29 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* PlaneMesh = nullptr;
 
 	bool bIsSpeedUp = false;
 
 
 	//Movement
-	UPROPERTY(BlueprintReadWrite)
-	float ForwardSpeed = 800;
+	//UPROPERTY(BlueprintReadWrite)
+	//float ForwardSpeed = 800;	
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	//float FallingAcceleration = 500;	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MinForwardSpeed = 800;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxForwardSpeed = 2000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float AccelerationSpeed = 500;
+	float AccelerationForce = 200000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float FallingAcceleration = 500;
+	float EnginePower = 100000;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float StartImpulse = 100000;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float DragCoefficient = 0.1;
 	//Rotation
 	UPROPERTY(BlueprintReadWrite)
 	float RotationRate = 20;
@@ -49,12 +55,14 @@ protected:
 	float AlignSpeed = 90.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float FlipSpeed = 90.f;
+
+
 	bool bIsAligningFromUpsideDown = false;
 	bool bNeedToFlip = false;
-	FQuat InitialRotationForFlip;
 	bool bIsFalling = false;
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentFlipRotation = 0.f;
+
 
 public:
 

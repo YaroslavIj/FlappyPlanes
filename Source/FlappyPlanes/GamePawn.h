@@ -28,7 +28,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TSubclassOf<AFlappyPlane> PlaneClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UCameraComponent* Camera = nullptr;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float PlaneMoveRadius = 2000.f;
