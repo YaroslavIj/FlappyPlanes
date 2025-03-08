@@ -40,4 +40,6 @@ public:
 
 	void SpeedUp();
 	void CancelSpeedUp();
+	void Fire();
+	void CancelFire();
 };

@@ -69,6 +69,8 @@ void AGamePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	PlayerInputComponent->BindAction("SpeedUp", IE_Pressed, this, &AGamePawn::SpeedUp);
 	PlayerInputComponent->BindAction("SpeedUp", IE_Released, this, &AGamePawn::CancelSpeedUp);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AGamePawn::Fire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AGamePawn::CancelFire);
 }
 
 void AGamePawn::SpeedUp()
@@ -84,5 +86,21 @@ void AGamePawn::CancelSpeedUp()
 	if (Plane)
 	{
 		Plane->SetIsSpeedUp(false);
+	}
+}
+
+void AGamePawn::Fire()
+{
+	if (Plane)
+	{
+		Plane->SetIsFiring(true);
+	}
+}
+
+void AGamePawn::CancelFire()
+{
+	if (Plane)
+	{
+		Plane->SetIsFiring(false);
 	}
 }

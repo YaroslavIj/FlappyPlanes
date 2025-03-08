@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
+#include "Projectile.h"
 //
 #include "FlappyPlane.generated.h"
 
@@ -25,13 +26,11 @@ protected:
 	UStaticMeshComponent* PlaneMesh = nullptr;
 
 	bool bIsSpeedUp = false;
+	bool bIsFiring = false;
 
+	FTimerHandle FireTimer;
 
 	//Movement
-	//UPROPERTY(BlueprintReadWrite)
-	//float ForwardSpeed = 800;	
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	//float FallingAcceleration = 500;	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MinForwardSpeed = 800;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
@@ -44,6 +43,17 @@ protected:
 	float StartImpulse = 100000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float DragCoefficient = 0.1;
+	bool bIsFalling = false;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float AirDensity = 1.225f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float LiftCoefficient = 5.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float SpeedUpOffsetAngle = 30.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float SpeedUpOffsetForce = 20000;
+	UPROPERTY(BlueprintReadWrite)
+	FVector UpwardOffsetDirection;
 	//Rotation
 	UPROPERTY(BlueprintReadWrite)
 	float RotationRate = 20;
@@ -55,14 +65,21 @@ protected:
 	float AlignSpeed = 90.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float FlipSpeed = 90.f;
-
-
-	bool bIsAligningFromUpsideDown = false;
 	bool bNeedToFlip = false;
-	bool bIsFalling = false;
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentFlipRotation = 0.f;
-
+	//Fuel
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
+	float Fuel = 1;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
+	float FuelConsumption = 0.05;
+	//Fire
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	float FireRate = 0.5f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	TSubclassOf<AProjectile> ProjectileClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	FVector FireLocation;
 
 public:
 
@@ -71,4 +88,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	void SetIsSpeedUp(bool InbIsSpeedUp);
+	void FillFuel();
+	void SetIsFiring(bool InbIsFiring);
+	void MovementTick(float DeltaTime);
+	UFUNCTION()
+	void Fire();
 };

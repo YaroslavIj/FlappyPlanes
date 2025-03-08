@@ -24,8 +24,40 @@ void AFlappyPlane::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	MovementTick(DeltaTime);
+}
+
+void AFlappyPlane::SetIsSpeedUp(bool InbIsSpeedUp)
+{
+	bIsSpeedUp = InbIsSpeedUp;
+	if (bIsSpeedUp)
+	{
+		bIsFalling = false;
+		if(PlaneMesh)
+		{
+			PlaneMesh->SetEnableGravity(false);
+		}
+	}
+	else
+	{
+		//ForwardSpeed = MinForwardSpeed;
+		if (PlaneMesh)
+		{
+			PlaneMesh->SetEnableGravity(true);
+		}
+	}
+}
+
+void AFlappyPlane::FillFuel()
+{
+	Fuel = 1.f;
+}
+
+void AFlappyPlane::MovementTick(float DeltaTime)
+{
+
 	if (bIsFalling)
-	{	
+	{
 		//ForwardSpeed += FallingAcceleration * DeltaTime;	
 	}
 	FVector LastLocation = GetActorLocation();
@@ -35,12 +67,22 @@ void AFlappyPlane::Tick(float DeltaTime)
 	//PlaneMesh->AddForce(ForwardVector * ForwardSpeed);
 	float Speed = PlaneMesh->GetPhysicsLinearVelocity().Length();
 	PlaneMesh->AddForce(-PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
-	if (bIsSpeedUp)
+	FVector LiftVector = GetActorUpVector();
+	float LiftForce = 0.5 * Speed * Speed * LiftCoefficient * AirDensity;
+	if (bIsSpeedUp && Fuel - FuelConsumption * DeltaTime >= 0)
 	{
-		if(!bNeedToFlip)
+		float YOffset = FMath::Cos(FMath::DegreesToRadians(SpeedUpOffsetAngle));
+		float ZOffset = FMath::Sin(FMath::DegreesToRadians(SpeedUpOffsetAngle));
+		if (!bIsMovingForward)
 		{
-			PlaneMesh->AddForce(ForwardVector * AccelerationForce);
-		/*	if (ForwardSpeed + AccelerationSpeed * DeltaTime < MaxForwardSpeed)
+			YOffset = -YOffset;
+		}
+		UpwardOffsetDirection = FVector(0, YOffset, ZOffset);
+		PlaneMesh->AddForce(UpwardOffsetDirection * SpeedUpOffsetForce);
+		PlaneMesh->AddForce(LiftVector * LiftForce);
+		if (!bNeedToFlip)
+		{
+			/*	if (ForwardSpeed + AccelerationSpeed * DeltaTime < MaxForwardSpeed)
 			{
 				ForwardSpeed += AccelerationSpeed * DeltaTime;
 			}
@@ -63,6 +105,8 @@ void AFlappyPlane::Tick(float DeltaTime)
 				NewRotationRate = RotationRate;
 			}
 			AddActorWorldRotation(FRotator(0, 0, NewRotationRate) * DeltaTime);
+			PlaneMesh->AddForce(ForwardVector * AccelerationForce);
+			Fuel -= FuelConsumption * DeltaTime;
 		}
 	}
 	else
@@ -108,7 +152,6 @@ void AFlappyPlane::Tick(float DeltaTime)
 					}
 					AddActorWorldRotation(RotationQuat);
 				}
-
 			}
 			else
 			{
@@ -122,7 +165,6 @@ void AFlappyPlane::Tick(float DeltaTime)
 					/*	FQuat NewRotation;
 						NewRotation = FQuat::Slerp(CurrentOrientation, TargetOrientationAligned, FMath::DegreesToRadians(AlignSpeed * DeltaTime));
 						SetActorRotation(NewRotation);
-
 						if (FMath::IsNearlyZero(AngularDistanceToAligned, 0.2f))
 						{
 							bIsFalling = true;
@@ -142,7 +184,7 @@ void AFlappyPlane::Tick(float DeltaTime)
 			}
 		}
 	}
-	
+
 	if (bNeedToFlip)
 	{
 
@@ -151,21 +193,21 @@ void AFlappyPlane::Tick(float DeltaTime)
 		//float DotProduct = CurrentQuat.X * TargetQuat.X + CurrentQuat.Y * TargetQuat.Y + CurrentQuat.Z * TargetQuat.Z + CurrentQuat.W * TargetQuat.W;
 		//float AngularDistance = FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f));
 		//if (FMath::IsNearlyZero(AngularDistance, 0.2f))
-	
+
 		//FQuat NewRotation = FQuat::Slerp(CurrentQuat, TargetQuat, FlipSpeed * DeltaTime);
 		//SetActorRotation(NewRotation);
 
 
 		FVector RotationAxis = GetActorForwardVector();
 		FQuat RotationQuat;
-		
-		if(CurrentFlipRotation + FlipSpeed * DeltaTime >= 180.f)
-		{		
+
+		if (CurrentFlipRotation + FlipSpeed * DeltaTime >= 180.f)
+		{
 			RotationQuat = FQuat(RotationAxis, FMath::DegreesToRadians(180.f - CurrentFlipRotation));
 			AddActorWorldRotation(RotationQuat);
-			bNeedToFlip = false;		
+			bNeedToFlip = false;
 			CurrentFlipRotation = 0;
-			
+
 		}
 		else
 		{
@@ -177,23 +219,29 @@ void AFlappyPlane::Tick(float DeltaTime)
 	}
 }
 
-void AFlappyPlane::SetIsSpeedUp(bool InbIsSpeedUp)
-{
-	bIsSpeedUp = InbIsSpeedUp;
-	if (bIsSpeedUp)
+void AFlappyPlane::SetIsFiring(bool InbIsFiring)
+{	
+	bIsFiring = InbIsFiring;
+	if (InbIsFiring)
 	{
-		bIsFalling = false;
-		if(PlaneMesh)
+		if(!GetWorld()->GetTimerManager().IsTimerActive(FireTimer))
 		{
-			PlaneMesh->SetEnableGravity(false);
-		}
+			Fire();
+		}	
 	}
-	else
+}
+
+void AFlappyPlane::Fire()
+{
+	if(bIsFiring)
 	{
-		//ForwardSpeed = MinForwardSpeed;
-		if (PlaneMesh)
+		if(GetWorld() && ProjectileClass)
 		{
-			PlaneMesh->SetEnableGravity(true);
+			FTransform SpawnTransform;
+			SpawnTransform.SetLocation(GetActorLocation() + FireLocation);
+			SpawnTransform.SetRotation(GetActorQuat());
+			GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnTransform);
+			GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, FireRate, false);
 		}
 	}
 }
