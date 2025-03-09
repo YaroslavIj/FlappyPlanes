@@ -141,14 +141,19 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 					//NewRotation = FQuat::Slerp(CurrentOrientation, TargetOrientationInverted, FMath::DegreesToRadians(AlignSpeed * DeltaTime));
 					//SetActorRotation(NewRotation);		
 					FQuat RotationQuat;
-					if (AngularDistanceToInverted - FMath::DegreesToRadians(AlignSpeed) * DeltaTime < 0)
+					float DeltaRotation = FMath::DegreesToRadians(AlignSpeed) * DeltaTime;
+					if (AngularDistanceToInverted - DeltaRotation < 0)
 					{
 						bIsFalling = true;
 						RotationQuat = FQuat(RotationAxis, AngularDistanceToInverted);
 					}
 					else
 					{
-						RotationQuat = FQuat(RotationAxis, FMath::DegreesToRadians(AlignSpeed) * DeltaTime);
+						if (GetActorRotation().Pitch < -55 && GetActorRotation().Pitch >= -90)
+						{
+							DeltaRotation = -DeltaRotation;
+						}
+						RotationQuat = FQuat(RotationAxis, DeltaRotation);
 					}
 					AddActorWorldRotation(RotationQuat);
 				}
@@ -170,14 +175,19 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 							bIsFalling = true;
 						}*/
 					FQuat RotationQuat;
-					if (AngularDistanceToAligned - FMath::DegreesToRadians(AlignSpeed) * DeltaTime < 0)
+					float DeltaRotation = FMath::DegreesToRadians(AlignSpeed) * DeltaTime;
+					if (AngularDistanceToAligned - DeltaRotation < 0)
 					{
 						bIsFalling = true;
 						RotationQuat = FQuat(RotationAxis, AngularDistanceToAligned);
 					}
 					else
 					{
-						RotationQuat = FQuat(RotationAxis, -FMath::DegreesToRadians(AlignSpeed) * DeltaTime);
+						if (GetActorRotation().Pitch > -55 && GetActorRotation().Pitch <= 90)
+						{
+							DeltaRotation = -DeltaRotation;
+						}
+						RotationQuat = FQuat(RotationAxis, DeltaRotation);
 					}
 					AddActorWorldRotation(RotationQuat);
 				}
