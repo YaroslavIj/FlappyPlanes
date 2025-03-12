@@ -118,6 +118,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 
 			FQuat CurrentOrientation = GetActorQuat();
 			CurrentOrientation.Normalize();
+
 			FQuat TargetOrientationInverted = FQuat(FRotator(-55, -90, 0));
 			FQuat TargetOrientationAligned = FQuat(FRotator(-55, 90, 0));
 			TargetOrientationInverted.Normalize();
@@ -128,8 +129,33 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 			float DotProductAligned = FVector::DotProduct(CurrentOrientation.Vector(), TargetOrientationAligned.Vector());
 			float AngularDistanceToAligned = FMath::Acos(FMath::Clamp(DotProductAligned, -1.0f, 1.0f));
 
-			if (AngularDistanceToInverted < AngularDistanceToAligned)
+			FQuat FlipFromForwardQuat = FQuat(FRotator(0, -90, -180));
+			FQuat FlipFromBackwardQuat = FQuat(FRotator(0, 90, 180));
+			FlipFromForwardQuat.Normalize();
+			FlipFromBackwardQuat.Normalize();
+
+			float DotProductFlipFromForward = FVector::DotProduct(CurrentOrientation.Vector(), FlipFromForwardQuat.Vector());
+			float AngularDistanceToFlipFromForward = FMath::Acos(FMath::Clamp(DotProductFlipFromForward, -1.0f, 1.0f));
+			float DotProductFlipFromBackward = FVector::DotProduct(CurrentOrientation.Vector(), FlipFromBackwardQuat.Vector());
+			float AngularDistanceToFlipFromBackward = FMath::Acos(FMath::Clamp(DotProductFlipFromBackward, -1.0f, 1.0f));
+
+			//if (AngularDistanceToInverted < AngularDistanceToAligned)
+			/*if(bIsMovingForward && GetActorRotation().Pitch > -90 && GetActorRotation().Pitch < 0 && FMath::IsNearlyEqual(GetActorRotation().Yaw, -90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, -180, 1)
+				|| !bIsMovingForward && !(GetActorRotation().Pitch > -90 && GetActorRotation().Pitch < 0 && FMath::IsNearlyEqual(GetActorRotation().Yaw, 90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, 180, 1)))*/
+			if(bIsMovingForward && FMath::RadiansToDegrees(AngularDistanceToFlipFromForward) < 90 && GetActorRotation().Pitch < 0 
+				|| !bIsMovingForward && !(FMath::RadiansToDegrees(AngularDistanceToFlipFromBackward) < 90 && GetActorRotation().Pitch < 0))
 			{
+				//(0, 90), 90, 180
+				/*if (GetActorRotation().Pitch > 0 && GetActorRotation().Pitch < 90 && FMath::IsNearlyEqual(GetActorRotation().Yaw, 90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, 180, 1))
+				{
+					PlaneMesh->SetEnableGravity(false);
+					PlaneMesh->AddForce(ForwardVector * AccelerationForce);
+				}
+				else
+				{
+					PlaneMesh->SetEnableGravity(true);
+					PlaneMesh->AddForce(ForwardVector * EnginePower);
+				}*/
 				if (bIsMovingForward)
 				{
 					bIsMovingForward = false;
@@ -160,6 +186,17 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 			}
 			else
 			{
+				//(0, 90), -90, -180
+			/*	if (GetActorRotation().Pitch > 0 && GetActorRotation().Pitch < 90 && FMath::IsNearlyEqual(GetActorRotation().Yaw, -90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, -180, 1))
+				{
+					PlaneMesh->SetEnableGravity(false);
+					PlaneMesh->AddForce(ForwardVector* AccelerationForce);
+				}
+				else
+				{
+					PlaneMesh->SetEnableGravity(true);
+					PlaneMesh->AddForce(ForwardVector * EnginePower);
+				}*/
 				if (!bIsMovingForward)
 				{
 					bIsMovingForward = true;
@@ -192,6 +229,16 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 					AddActorWorldRotation(RotationQuat);
 				}
 			}
+		/*	if (GetActorRotation().Pitch > 0)
+			{
+				PlaneMesh->SetEnableGravity(false);
+				PlaneMesh->AddForce(ForwardVector * AccelerationForce);
+			}
+			else
+			{
+				PlaneMesh->SetEnableGravity(true);
+				PlaneMesh->AddForce(ForwardVector * EnginePower);
+			}*/
 		}
 	}
 

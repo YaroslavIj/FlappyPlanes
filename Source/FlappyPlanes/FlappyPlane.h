@@ -82,7 +82,7 @@ protected:
 	FVector FireLocation;
 
 public:
-
+	UPROPERTY(BlueprintReadWrite)
 	bool bIsMovingForward = true;
 
 	virtual void Tick(float DeltaTime) override;
