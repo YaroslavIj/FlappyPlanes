@@ -80,7 +80,10 @@ protected:
 	TSubclassOf<AProjectile> ProjectileClass;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	FVector FireLocation;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	int32 MaxProjectilesAmount = 30;
+	UPROPERTY(BlueprintReadWrite, Category = "Fire")
+	int32 ProjectilesAmount;
 public:
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsMovingForward = true;
@@ -93,4 +96,10 @@ public:
 	void MovementTick(float DeltaTime);
 	UFUNCTION()
 	void Fire();
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetCurrentFuel() { return Fuel; };
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetCurrentProjectilesAmount() { return ProjectilesAmount; };
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float SetProjectilesAmount() { return ProjectilesAmount; };
 };

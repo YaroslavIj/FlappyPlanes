@@ -18,6 +18,7 @@ void AFlappyPlane::BeginPlay()
 	RotationRate = MinRotationRate;	
 	FVector ImpulseDirection = GetActorForwardVector();
 	PlaneMesh->AddImpulse(ImpulseDirection * StartImpulse);
+	ProjectilesAmount = MaxProjectilesAmount;
 }
 
 void AFlappyPlane::Tick(float DeltaTime)
@@ -292,13 +293,18 @@ void AFlappyPlane::Fire()
 {
 	if(bIsFiring)
 	{
-		if(GetWorld() && ProjectileClass)
+		if (ProjectilesAmount > 0)
 		{
-			FTransform SpawnTransform;
-			SpawnTransform.SetLocation(GetActorLocation() + FireLocation);
-			SpawnTransform.SetRotation(GetActorQuat());
-			GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnTransform);
-			GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, FireRate, false);
+			if (GetWorld() && ProjectileClass)
+			{
+				FTransform SpawnTransform;
+				SpawnTransform.SetLocation(GetActorLocation() + FireLocation);
+				SpawnTransform.SetRotation(GetActorQuat());
+				GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnTransform);
+				GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, FireRate, false);
+
+				ProjectilesAmount--;
+			}
 		}
 	}
 }
