@@ -22,8 +22,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	UPROPERTY(BlueprintReadWrite)
-	AFlappyPlane* Plane = nullptr;
+
+	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TSubclassOf<AFlappyPlane> PlaneClass;
@@ -34,6 +34,9 @@ protected:
 	float PlaneMoveRadius = 2000.f;
 public:	
 
+	UPROPERTY(BlueprintReadWrite)
+	AFlappyPlane* Plane = nullptr;
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -42,4 +45,8 @@ public:
 	void CancelSpeedUp();
 	void Fire();
 	void CancelFire();
+	UFUNCTION(Server, Reliable)
+	void SpeedUp_Server(bool bIsSpeedUp);
+	UFUNCTION(Server, Reliable)
+	void Fire_Server(bool bIsSpeedUp);
 };

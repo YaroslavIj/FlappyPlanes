@@ -2,6 +2,7 @@
 #include "GamePawn.h"
 #include "Engine/TargetPoint.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 AGamePawn::AGamePawn()
 {
@@ -11,54 +12,62 @@ AGamePawn::AGamePawn()
 	Camera->SetupAttachment(RootComponent);
 }
 
+void AGamePawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
 void AGamePawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	TArray<AActor*> OutActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATargetPoint::StaticClass(), OutActors);
-	if(PlaneClass && GetWorld())
-	{
-		for (AActor* Point : OutActors)
-		{
-			if (Point && Point->Tags.Contains("Plane") && !Point->Tags.Contains("Occupied"))
-			{
-				Plane = GetWorld()->SpawnActor<AFlappyPlane>(PlaneClass, Point->GetActorTransform());		
-				if(Plane)
-				{
-					Point->Tags.Add("Occupied");
 
-					if (Point->Tags.Contains("Forward"))
-					{
-						Plane->bIsMovingForward = true;
-					}
-					else if (Point->Tags.Contains("Backward"))
-					{
-						Plane->bIsMovingForward = false;
-					}
-				}
-			}
-		}
-	}
+	//TArray<AActor*> OutActors;
+	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATargetPoint::StaticClass(), OutActors);
+	//if(PlaneClass && GetWorld())
+	//{
+	//	for (AActor* Point : OutActors)
+	//	{
+	//		if (Point && Point->Tags.Contains("Plane") && !Point->Tags.Contains("Occupied"))
+	//		{
+	//			Plane = GetWorld()->SpawnActor<AFlappyPlane>(PlaneClass, Point->GetActorTransform());		
+	//			if(Plane)
+	//			{
+	//				Point->Tags.Add("Occupied");
+	//
+	//				if (Point->Tags.Contains("Forward"))
+	//				{
+	//					Plane->bIsMovingForward = true;
+	//				}
+	//				else if (Point->Tags.Contains("Backward"))
+	//				{
+	//					Plane->bIsMovingForward = false;
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 void AGamePawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (Plane)
+	if(GetLocalRole() == ROLE_Authority)
 	{
-		FVector CurrentPlaneLocation = Plane->GetActorLocation();
-		CurrentPlaneLocation.X = 0;
-		FVector CameraLocation = GetActorLocation();
-		CameraLocation.X = 0;
-		float Distance = FVector::Dist(CurrentPlaneLocation, CameraLocation);
-		if (Distance > PlaneMoveRadius)
+		if (Plane)
 		{
-			FVector Direction = FVector(CurrentPlaneLocation - CameraLocation);
-			Direction.Normalize();
-			FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
-			SetActorLocation(GetActorLocation() + CameraMove);
+			FVector CurrentPlaneLocation = Plane->GetActorLocation();
+			CurrentPlaneLocation.X = 0;
+			FVector CameraLocation = GetActorLocation();
+			CameraLocation.X = 0;
+			float Distance = FVector::Dist(CurrentPlaneLocation, CameraLocation);
+			if (Distance > PlaneMoveRadius)
+			{
+				FVector Direction = FVector(CurrentPlaneLocation - CameraLocation);
+				Direction.Normalize();
+				FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
+				SetActorLocation(GetActorLocation() + CameraMove);
+			}
 		}
 	}
 }
@@ -75,32 +84,35 @@ void AGamePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AGamePawn::SpeedUp()
 {
-	if (Plane)
-	{
-		Plane->SetIsSpeedUp(true);
-	}
+	SpeedUp_Server(true);
 }
 
-void AGamePawn::CancelSpeedUp()
+void AGamePawn::SpeedUp_Server_Implementation(bool bIsSpeedUp)
 {
 	if (Plane)
 	{
-		Plane->SetIsSpeedUp(false);
+		Plane->SetIsSpeedUp_Server(bIsSpeedUp);
 	}
+}
+void AGamePawn::CancelSpeedUp()
+{
+	SpeedUp_Server(false);
 }
 
 void AGamePawn::Fire()
 {
-	if (Plane)
-	{
-		Plane->SetIsFiring(true);
-	}
+	Fire_Server(true);
 }
 
 void AGamePawn::CancelFire()
 {
+	Fire_Server(false);
+}
+
+void AGamePawn::Fire_Server_Implementation(bool bIsSpeedUp)
+{
 	if (Plane)
 	{
-		Plane->SetIsFiring(false);
+		Plane->SetIsFiring_Server(bIsSpeedUp);
 	}
 }

@@ -29,6 +29,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* Mesh = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float HealthRecovery = 20.f;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

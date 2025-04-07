@@ -9,12 +9,19 @@
 //
 #include "FlappyPlane.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaneDied, AFlappyPlane*, Plane);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, NewHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFuelChanged, float, NewFuel);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectilesAmountChanged, float, NewProjectilesAmount);
+
+class AGamePawn;
+
 UCLASS()
-class FLAPPYPLANES_API AFlappyPlane : public AActor 
+class FLAPPYPLANES_API AFlappyPlane : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AFlappyPlane();
 
@@ -29,6 +36,12 @@ protected:
 	bool bIsFiring = false;
 
 	FTimerHandle FireTimer;
+	UPROPERTY(BlueprintAssignable)
+	FOnHealthChanged OnHealthChanged;
+	UPROPERTY(BlueprintAssignable)
+	FOnFuelChanged OnFuelChanged;
+	UPROPERTY(BlueprintAssignable)
+	FOnProjectilesAmountChanged OnProjectilesAmountChanged;
 
 	//Movement
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
@@ -52,24 +65,29 @@ protected:
 	float SpeedUpOffsetAngle = 30.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float SpeedUpOffsetForce = 20000;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float CollisionImpulceForSelf = 20000;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float CollisionImpulceForOther = 50000;
 	UPROPERTY(BlueprintReadWrite)
 	FVector UpwardOffsetDirection;
 	//Rotation
 	UPROPERTY(BlueprintReadWrite)
-	float RotationRate = 20;
+	float RotationRate = 0;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float MinRotationRate = 20;	
+	float MinRotationRate = 20;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxRotationRate = 45;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float AlignSpeed = 90.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float FlipSpeed = 90.f;
+
 	bool bNeedToFlip = false;
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentFlipRotation = 0.f;
 	//Fuel
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
+	UPROPERTY(ReplicatedUsing = OnRep_Fuel , EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
 	float Fuel = 1;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
 	float FuelConsumption = 0.05;
@@ -82,17 +100,41 @@ protected:
 	FVector FireLocation;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	int32 MaxProjectilesAmount = 30;
-	UPROPERTY(BlueprintReadWrite, Category = "Fire")
+	UPROPERTY(ReplicatedUsing = OnRep_ProjectilesAmount, BlueprintReadWrite, Category = "Fire")
 	int32 ProjectilesAmount;
+	//Sounds
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* FlightSound = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	USoundBase* SpeedUpSound = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	float FlightSoundVolume;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	float SpeedUpSoundVolume;
+	UAudioComponent* CurrentFlightSound = nullptr;
+	UPROPERTY(ReplicatedUsing = OnRep_Health)
+	float Health = 100.f;
+	bool bIsGameStarted = false;
+
+
+	void Dead();
 public:
+
+	UPROPERTY(Replicated, BlueprintReadWrite)
+	AGamePawn* PawnOwner = nullptr;
+
+	FOnPlaneDied OnPlaneDied;
+
 	UPROPERTY(BlueprintReadWrite)
 	bool bIsMovingForward = true;
 
 	virtual void Tick(float DeltaTime) override;
 
-	void SetIsSpeedUp(bool InbIsSpeedUp);
+	UFUNCTION(Server, Reliable)
+	void SetIsSpeedUp_Server(bool InbIsSpeedUp);
 	void FillFuel();
-	void SetIsFiring(bool InbIsFiring);
+	UFUNCTION(Server, Reliable)
+	void SetIsFiring_Server(bool InbIsFiring);
 	void MovementTick(float DeltaTime);
 	UFUNCTION()
 	void Fire();
@@ -101,5 +143,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetCurrentProjectilesAmount() { return ProjectilesAmount; };
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float SetProjectilesAmount() { return ProjectilesAmount; };
+	FORCEINLINE float GetMaxProjectilesAmount() { return MaxProjectilesAmount; };
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetProjectilesAmount(float NewProjectilesAmount) { ProjectilesAmount = NewProjectilesAmount; };
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetCurrentHealth() { return Health; }
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE void SetHealth(float NewHealth) { Health = NewHealth; }
+	UFUNCTION(BlueprintCallable)
+	void ReceiveDamage(float Damage);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void ChangeFlightSound_Multicast(USoundBase* Sound, float VolumeMultiplier);
+	void StartGame();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void OnRep_Health();
+	UFUNCTION(BlueprintNativeEvent)
+	void OnRep_Fuel();
+	UFUNCTION(BlueprintNativeEvent)
+	void OnRep_ProjectilesAmount();
+
+	UFUNCTION()
+	void OnOverlap(AActor* OverlappedActor, AActor* OtherActor);
 };

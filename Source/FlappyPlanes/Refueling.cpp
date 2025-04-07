@@ -38,23 +38,28 @@ void ARefueling::Refill()
 
 void ARefueling::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-	if(bIsFilled)
+	if(GetLocalRole() == ROLE_Authority)
 	{
-		if (AFlappyPlane* Plane = Cast<AFlappyPlane>(OtherActor))
+		if (bIsFilled)
 		{
-			Plane->FillFuel();
-			if (bIsRefillable)
+			if (AFlappyPlane* Plane = Cast<AFlappyPlane>(OtherActor))
 			{
-				Mesh->SetVisibility(false);
-				bIsFilled = false;
-				if (GetWorld())
+				Plane->FillFuel();
+				Plane->ReceiveDamage(-HealthRecovery);
+				Plane->SetProjectilesAmount(Plane->GetMaxProjectilesAmount());
+				if (bIsRefillable)
 				{
-					GetWorld()->GetTimerManager().SetTimer(RefillingTimer, this, &ARefueling::Refill, RefillingTime, false);
+					Mesh->SetVisibility(false);
+					bIsFilled = false;
+					if (GetWorld())
+					{
+						GetWorld()->GetTimerManager().SetTimer(RefillingTimer, this, &ARefueling::Refill, RefillingTime, false);
+					}
 				}
-			}
-			else
-			{
-				Destroy();
+				else
+				{
+					Destroy();
+				}
 			}
 		}
 	}
