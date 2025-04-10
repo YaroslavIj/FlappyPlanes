@@ -336,8 +336,11 @@ void AFlappyPlane::Fire()
 				GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnTransform, SpawnParams);
 				GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, FireRate, false);
 
-				ProjectilesAmount--;
-				OnProjectilesAmountChanged.Broadcast(ProjectilesAmount);
+				if (!bHasInfiniteAmmo)
+				{
+					ProjectilesAmount--;
+					OnProjectilesAmountChanged.Broadcast(ProjectilesAmount);
+				}
 			}
 		}
 	}

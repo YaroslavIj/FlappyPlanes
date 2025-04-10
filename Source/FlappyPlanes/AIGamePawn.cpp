@@ -28,13 +28,13 @@ void AAIGamePawn::Tick(float DeltaTime)
 					{	
 						
 						//float DeltaRotationToEnemy = FMath::RadiansToDegrees(Plane->GetActorQuat().AngularDistance(FQuat(TargetRotation)));
-						/*FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(Plane->GetActorLocation(), FoundPlane->GetActorLocation());
+						FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(Plane->GetActorLocation(), FoundPlane->GetActorLocation());
 						FVector RightAxis = Plane->GetActorRightVector();
 						FQuat TargetQuat = FQuat(TargetRotation);
 						FQuat CurrentQuat = Plane->GetActorQuat();
-						FQuat TargetQuatUp = FQuat(RightAxis, TargetQuat.GetAngle() + FMath::DegreesToRadians(5));
-						FQuat TargetQuatDown = FQuat(RightAxis, TargetQuat.GetAngle() - FMath::DegreesToRadians(5));
-						if(CurrentQuat.AngularDistance(TargetQuatUp) < CurrentQuat.AngularDistance(TargetQuatDown) && Plane->bIsMovingForward 
+					/*	FQuat TargetQuatUp = FQuat(RightAxis, FMath::DegreesToRadians(5)) * CurrentQuat;
+						FQuat TargetQuatDown = FQuat(RightAxis, FMath::DegreesToRadians(-5)) * CurrentQuat;*/
+					/*	if(CurrentQuat.AngularDistance(TargetQuatUp) > CurrentQuat.AngularDistance(TargetQuatDown) && Plane->bIsMovingForward 
 							|| CurrentQuat.AngularDistance(TargetQuatUp) < CurrentQuat.AngularDistance(TargetQuatDown) && !Plane->bIsMovingForward)
 						{
 							Plane->SetIsSpeedUp_Server(true);
@@ -43,6 +43,50 @@ void AAIGamePawn::Tick(float DeltaTime)
 						{
 							Plane->SetIsSpeedUp_Server(false);
 						}*/
+						FVector CurrentForward = Plane->GetActorForwardVector();
+						FVector TargetForward = FoundPlane->GetActorLocation() - Plane->GetActorLocation();
+						TargetForward.Normalize();
+
+						// ”бираем компоненту по RightAxis, оставл€€ только "вращение вокруг Right"
+						FVector CurrentProjected = FVector::VectorPlaneProject(CurrentForward, RightAxis).GetSafeNormal();
+						FVector TargetProjected = FVector::VectorPlaneProject(TargetForward, RightAxis).GetSafeNormal();
+
+						// ”гол между направлени€ми в плоскости
+						float Angle = FMath::Acos(FVector::DotProduct(CurrentProjected, TargetProjected));
+
+						// ќпредел€ем знак через CrossProduct и Dot с RightAxis
+						float Sign = FVector::DotProduct(FVector::CrossProduct(CurrentProjected, TargetProjected), RightAxis);
+						float SignedAngle = Angle * FMath::Sign(Sign);
+						if(!bNeedToCoup)
+						{
+							if (SignedAngle > 0 && Plane->bIsMovingForward || SignedAngle < 0 && !Plane->bIsMovingForward)
+							{
+								Plane->SetIsSpeedUp_Server(true);
+							}
+							else
+							{
+								if (Plane->bIsFalling)
+								{
+									bNeedToCoup = true;
+								}
+								Plane->SetIsSpeedUp_Server(false);
+							}
+						}
+						else
+						{
+							Plane->SetIsSpeedUp_Server(true);
+						}
+						if (CurrentQuat.AngularDistance(TargetQuat) < FMath::DegreesToRadians(10))
+						{
+							bNeedToCoup = false;
+							//Plane->SetIsSpeedUp_Server(false);
+							Plane->SetIsFiring_Server(true);
+						}
+						else
+						{
+							//Plane->SetIsSpeedUp_Server(true);
+							Plane->SetIsFiring_Server(false);
+						}
 					/*	FVector ToTarget = FoundPlane->GetActorLocation() - Plane->GetActorLocation();
 						FVector CurretSightLocation = Plane->GetActorLocation() + ToTarget;
 						for()
@@ -96,6 +140,6 @@ void AAIGamePawn::StartGame()
 {
 	if (Plane)
 	{
-		Plane->SetIsSpeedUp_Server(true);
+		//Plane->SetIsSpeedUp_Server(true);
 	}
 }

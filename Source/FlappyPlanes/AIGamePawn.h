@@ -30,4 +30,5 @@ public:
 
 	void StartGame();
 
+	bool bNeedToCoup = false;
 };

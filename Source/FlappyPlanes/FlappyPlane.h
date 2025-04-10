@@ -56,7 +56,6 @@ protected:
 	float StartImpulse = 100000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float DragCoefficient = 0.1;
-	bool bIsFalling = false;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float AirDensity = 1.225f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
@@ -120,6 +119,8 @@ protected:
 	void Dead();
 public:
 
+	bool bIsFalling = false;
+	bool bHasInfiniteAmmo = false;
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	AGamePawn* PawnOwner = nullptr;
 

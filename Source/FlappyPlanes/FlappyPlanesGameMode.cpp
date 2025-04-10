@@ -29,7 +29,11 @@ void AFlappyPlanesGameMode::PostLogin(APlayerController* NewPlayer)
 			if (AAIGamePawn* SpawnedPawn = GetWorld()->SpawnActor<AAIGamePawn>(AIPawnClass))
 			{
 				AIGamePawns.Add(SpawnedPawn);
-				SpawnPlane(SpawnedPawn);
+				AFlappyPlane* Plane = SpawnPlane(SpawnedPawn);
+				if (Plane)
+				{
+					Plane->bHasInfiniteAmmo = true;
+				}
 			}
 		}
 		if (PlayerControllers.Num() == GI->GetMaxPlayers() && GI->GetIsOnline() || !GI->GetIsOnline())
