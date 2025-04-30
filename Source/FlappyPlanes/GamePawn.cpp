@@ -51,7 +51,6 @@ void AGamePawn::BeginPlay()
 void AGamePawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 	if(GetLocalRole() == ROLE_Authority)
 	{
 		if (Plane)

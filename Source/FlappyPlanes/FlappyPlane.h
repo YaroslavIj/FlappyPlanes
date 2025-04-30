@@ -49,7 +49,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxForwardSpeed = 2000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float AccelerationForce = 200000;
+	float SpeedUpForce = 6000000.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float CurrentForceWhileSpeedUp = 6000000.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float AccelerationForce = 4000000.0f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float EnginePower = 100000;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
