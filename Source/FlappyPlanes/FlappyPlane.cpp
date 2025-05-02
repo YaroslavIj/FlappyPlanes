@@ -19,7 +19,7 @@ void AFlappyPlane::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AFlappyPlane, Health);
 	DOREPLIFETIME(AFlappyPlane, Fuel);
 	DOREPLIFETIME(AFlappyPlane, ProjectilesAmount);
-	//DOREPLIFETIME(AFlappyPlane, MaxProjectilesAmount);
+	DOREPLIFETIME(AFlappyPlane, bIsSpeedUp);
 	DOREPLIFETIME(AFlappyPlane, PawnOwner);
 }
 
@@ -43,6 +43,7 @@ void AFlappyPlane::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MovementTick(DeltaTime);
+	ChangeFlightSoundVolumeTick_Multicast(DeltaTime);
 }
 
 void AFlappyPlane::SetIsSpeedUp_Server_Implementation(bool InbIsSpeedUp)
@@ -52,7 +53,7 @@ void AFlappyPlane::SetIsSpeedUp_Server_Implementation(bool InbIsSpeedUp)
 		UE_LOG(LogTemp, Warning, TEXT("AFlappyPlane::SetIsSpeedUp_Server_Implementation"));
 		if(!bIsSpeedUp)
 		{
-			ChangeFlightSound_Multicast(SpeedUpSound, SpeedUpSoundVolume);
+			//ChangeFlightSound_Multicast(SpeedUpSound, SpeedUpSoundVolume);
 			bIsFalling = false;
 			if (PlaneMesh)
 			{
@@ -68,7 +69,7 @@ void AFlappyPlane::SetIsSpeedUp_Server_Implementation(bool InbIsSpeedUp)
 			{
 				PlaneMesh->SetEnableGravity(true);
 			}
-			ChangeFlightSound_Multicast(FlightSound, FlightSoundVolume);
+			//ChangeFlightSound_Multicast(FlightSound, FlightSoundVolume);
 		}
 	}	
 	bIsSpeedUp = InbIsSpeedUp;
@@ -527,15 +528,32 @@ void AFlappyPlane::OnRep_ProjectilesAmount_Implementation()
 	//BP
 }
 
-void AFlappyPlane::ChangeFlightSound_Multicast_Implementation(USoundBase* Sound, float VolumeMultiplier)
+void AFlappyPlane::ChangeFlightSoundVolumeTick_Multicast_Implementation(float DeltaTime)
 {	
-	if (CurrentFlightSound)
-	{
-		CurrentFlightSound->DestroyComponent();
-	}
-	if(PlaneMesh && Sound)
-	{
-		CurrentFlightSound = UGameplayStatics::SpawnSoundAttached(Sound, PlaneMesh, NAME_None, FVector(0), EAttachLocation::SnapToTarget, false, VolumeMultiplier);
-	}
+	//if (CurrentFlightSound)
+	//{
+	//	//CurrentFlightSound->Stop();
+	//	//CurrentFlightSound->DestroyComponent();
 
+	//}
+	if(!CurrentFlightSound)
+	{
+		CurrentFlightSound = UGameplayStatics::SpawnSoundAttached(FlightSound, PlaneMesh, NAME_None, FVector(0), EAttachLocation::SnapToTarget, false, FlightSoundVolume);
+	}
+	if(CurrentFlightSound && CurrentFlightSound->IsPlaying())
+	{
+		float ChangeRate;
+		if (bIsSpeedUp)
+		{
+			ChangeRate = FlightSoundVolumeCangeRate * DeltaTime;
+		}
+		else
+		{
+			ChangeRate = -FlightSoundVolumeCangeRate * DeltaTime;
+		}
+		if (CurrentFlightSound->VolumeMultiplier + ChangeRate > FlightSoundVolume && CurrentFlightSound->VolumeMultiplier + ChangeRate < SpeedUpSoundVolume)
+		{
+			CurrentFlightSound->SetVolumeMultiplier(CurrentFlightSound->VolumeMultiplier + ChangeRate);
+		}
+	}
 }

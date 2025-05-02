@@ -77,13 +77,17 @@ void AFlappyPlanesGameMode::OnPlaneDied(AFlappyPlane* Plane)
 		{
 			if (APlayerController* Controller = Cast<APlayerController>(Pawn->GetController()))
 			{
-				Plane->Destroy();
 				EndGame_BP(Controller);
-				APlayerController* ServerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-				if (ServerController)
-				{
-					ServerController->ServerPause();
-				}
+			}	
+			else
+			{
+				EndGame_BP(nullptr);
+			}
+			Plane->Destroy();			
+			APlayerController* ServerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+			if (ServerController)
+			{
+				ServerController->ServerPause();
 			}
 		}
 	}

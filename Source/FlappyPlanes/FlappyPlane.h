@@ -32,6 +32,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* PlaneMesh = nullptr;
 
+	UPROPERTY(Replicated)
 	bool bIsSpeedUp = false;
 	bool bIsFiring = false;
 
@@ -108,17 +109,19 @@ protected:
 	//Sounds
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FlightSound = nullptr;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
-	USoundBase* SpeedUpSound = nullptr;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	//USoundBase* SpeedUpSound = nullptr;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	float FlightSoundVolume;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	float SpeedUpSoundVolume;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
+	float FlightSoundVolumeCangeRate = 0.4;
+	UPROPERTY(BlueprintReadWrite)
 	UAudioComponent* CurrentFlightSound = nullptr;
 	UPROPERTY(ReplicatedUsing = OnRep_Health)
 	float Health = 100.f;
 	bool bIsGameStarted = false;
-
 
 	void Dead();
 public:
@@ -158,8 +161,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ReceiveDamage(float Damage);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void ChangeFlightSound_Multicast(USoundBase* Sound, float VolumeMultiplier);
+	UFUNCTION(NetMulticast, Unreliable)
+	void ChangeFlightSoundVolumeTick_Multicast(float DeltaTime);
 	void StartGame();
 
 	UFUNCTION(BlueprintNativeEvent)
