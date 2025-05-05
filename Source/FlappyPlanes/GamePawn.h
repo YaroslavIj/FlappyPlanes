@@ -31,7 +31,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UCameraComponent* Camera = nullptr;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float PlaneMoveRadiusZ = 2000.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float PlaneMoveRadiusY = 2000.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float PlaneMoveRadius = 2000.f;
+
+	FVector DefaultCameraLocation;
 public:	
 
 	UPROPERTY(BlueprintReadWrite)

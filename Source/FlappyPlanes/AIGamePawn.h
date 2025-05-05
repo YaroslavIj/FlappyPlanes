@@ -20,6 +20,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	float FinalAngle;
+
+	UPROPERTY(BlueprintReadWrite)
+	float SignedAngle;
 protected:
 
 	virtual void BeginPlay() override;

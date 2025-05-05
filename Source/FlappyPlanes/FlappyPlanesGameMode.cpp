@@ -5,6 +5,7 @@
 #include "GamePawn.h"
 #include "FlappyPlanesInstance.h"
 #include "AIGamePawn.h"
+#include "Engine/PlayerStartPIE.h"
 
 void AFlappyPlanesGameMode::PostLogin(APlayerController* NewPlayer)
 {
@@ -26,7 +27,8 @@ void AFlappyPlanesGameMode::PostLogin(APlayerController* NewPlayer)
 	{	
 		if (!GI->GetIsOnline())
 		{
-			if (AAIGamePawn* SpawnedPawn = GetWorld()->SpawnActor<AAIGamePawn>(AIPawnClass))
+			AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass());
+			if (AAIGamePawn* SpawnedPawn = GetWorld()->SpawnActor<AAIGamePawn>(AIPawnClass, PlayerStart->GetActorTransform()))
 			{
 				AIGamePawns.Add(SpawnedPawn);
 				AFlappyPlane* Plane = SpawnPlane(SpawnedPawn);

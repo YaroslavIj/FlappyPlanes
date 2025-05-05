@@ -21,6 +21,9 @@ void AGamePawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	DefaultCameraLocation = GetActorLocation();
+
+
 	//TArray<AActor*> OutActors;
 	//UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATargetPoint::StaticClass(), OutActors);
 	//if(PlaneClass && GetWorld())
@@ -56,17 +59,37 @@ void AGamePawn::Tick(float DeltaTime)
 		if (Plane)
 		{
 			FVector CurrentPlaneLocation = Plane->GetActorLocation();
-			CurrentPlaneLocation.X = 0;
-			FVector CameraLocation = GetActorLocation();
-			CameraLocation.X = 0;
-			float Distance = FVector::Dist(CurrentPlaneLocation, CameraLocation);
-			if (Distance > PlaneMoveRadius)
+			FVector NewPlaneLocation = CurrentPlaneLocation;
+			if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z >= PlaneMoveRadiusZ)
 			{
-				FVector Direction = FVector(CurrentPlaneLocation - CameraLocation);
-				Direction.Normalize();
-				FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
-				SetActorLocation(GetActorLocation() + CameraMove);
+				NewPlaneLocation.Z = DefaultCameraLocation.Z - PlaneMoveRadiusZ + 1;
 			}
+			else if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z <= -PlaneMoveRadiusZ)
+			{
+				NewPlaneLocation.Z = DefaultCameraLocation.Z + PlaneMoveRadiusZ - 1;
+			}
+			if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y >= PlaneMoveRadiusY)
+			{
+				NewPlaneLocation.Y = DefaultCameraLocation.Y - PlaneMoveRadiusY + 1;
+			}
+			else if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y <= -PlaneMoveRadiusY)
+			{
+				NewPlaneLocation.Y = DefaultCameraLocation.Y + PlaneMoveRadiusY - 1;
+			}
+			Plane->SetActorLocation(NewPlaneLocation);
+
+
+			//CurrentPlaneLocation.X = 0;
+			//FVector CurrentCameraLocation = GetActorLocation();
+			//CurrentCameraLocation.X = 0;
+			//float Distance = FVector::Dist(CurrentPlaneLocation, CurrentCameraLocation);
+			//if (Distance > PlaneMoveRadius)
+			//{
+			//	FVector Direction = FVector(CurrentPlaneLocation - CurrentCameraLocation);
+			//	Direction.Normalize();
+			//	FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
+			//	SetActorLocation(GetActorLocation() + CameraMove);
+			//}
 		}
 	}
 }

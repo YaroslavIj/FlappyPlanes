@@ -505,6 +505,12 @@ void AFlappyPlane::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 							PlaneMesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
 							OtherPlane->PlaneMesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
 						}
+						if (DeltaRotationForSelf > 45 && DeltaRotationForOther > 45)
+						{
+							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+							OtherPlane->PlaneMesh->AddImpulse(Direction * CollisionImpulceForSelf);
+							PlaneMesh->AddImpulse(Direction * -CollisionImpulceForSelf);
+						}
 					}
 				}
 				

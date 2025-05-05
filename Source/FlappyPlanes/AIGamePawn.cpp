@@ -25,8 +25,7 @@ void AAIGamePawn::Tick(float DeltaTime)
 				if (AFlappyPlane* FoundPlane = Cast<AFlappyPlane>(Actor))
 				{
 					if (FoundPlane != Plane)
-					{	
-						
+					{					
 						//float DeltaRotationToEnemy = FMath::RadiansToDegrees(Plane->GetActorQuat().AngularDistance(FQuat(TargetRotation)));
 						FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(Plane->GetActorLocation(), FoundPlane->GetActorLocation());
 						FVector RightAxis = Plane->GetActorRightVector();
@@ -56,7 +55,7 @@ void AAIGamePawn::Tick(float DeltaTime)
 
 						// Определяем знак через CrossProduct и Dot с RightAxis
 						float Sign = FVector::DotProduct(FVector::CrossProduct(CurrentProjected, TargetProjected), RightAxis);
-						float SignedAngle = Angle * FMath::Sign(Sign);
+						SignedAngle = Angle * FMath::Sign(Sign);
 						if(!bNeedToCoup)
 						{
 							if (SignedAngle > 0 && Plane->bIsMovingForward || SignedAngle < 0 && !Plane->bIsMovingForward)
@@ -76,7 +75,7 @@ void AAIGamePawn::Tick(float DeltaTime)
 						{
 							Plane->SetIsSpeedUp_Server(true);
 						}
-						if (CurrentQuat.AngularDistance(TargetQuat) < FMath::DegreesToRadians(10))
+						if (Angle < FMath::DegreesToRadians(10))
 						{
 							bNeedToCoup = false;
 							//Plane->SetIsSpeedUp_Server(false);
@@ -87,7 +86,7 @@ void AAIGamePawn::Tick(float DeltaTime)
 							//Plane->SetIsSpeedUp_Server(true);
 							Plane->SetIsFiring_Server(false);
 						}
-					/*	FVector ToTarget = FoundPlane->GetActorLocation() - Plane->GetActorLocation();
+						/*	FVector ToTarget = FoundPlane->GetActorLocation() - Plane->GetActorLocation();
 						FVector CurretSightLocation = Plane->GetActorLocation() + ToTarget;
 						for()
 						if ()
