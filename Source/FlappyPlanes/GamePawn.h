@@ -38,6 +38,9 @@ protected:
 	float PlaneMoveRadius = 2000.f;
 
 	FVector DefaultCameraLocation;
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bMoveCamera = true;
 public:	
 
 	UPROPERTY(BlueprintReadWrite)

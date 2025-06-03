@@ -18,7 +18,8 @@ void AFlappyPlanesGameMode::PostLogin(APlayerController* NewPlayer)
 			if (AGamePawn* SpawnedPawn = GetWorld()->SpawnActor<AGamePawn>(PawnClass, PlayerStart->GetActorTransform()))
 			{
 				NewPlayer->Possess(SpawnedPawn);
-				SpawnPlane(SpawnedPawn);
+				AFlappyPlane* Plane = SpawnPlane(SpawnedPawn);
+				Plane->CreateDynamicShadow_Multicast();
 			}
 		}
 	}

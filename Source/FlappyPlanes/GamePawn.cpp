@@ -58,38 +58,43 @@ void AGamePawn::Tick(float DeltaTime)
 	{
 		if (Plane)
 		{
-			FVector CurrentPlaneLocation = Plane->GetActorLocation();
-			FVector NewPlaneLocation = CurrentPlaneLocation;
-			if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z >= PlaneMoveRadiusZ)
+			if(!bMoveCamera)
 			{
-				NewPlaneLocation.Z = DefaultCameraLocation.Z - PlaneMoveRadiusZ + 1;
+				FVector CurrentPlaneLocation = Plane->GetActorLocation();
+				FVector NewPlaneLocation = CurrentPlaneLocation;
+				if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z >= PlaneMoveRadiusZ)
+				{
+					NewPlaneLocation.Z = DefaultCameraLocation.Z - PlaneMoveRadiusZ + 1;
+				}
+				else if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z <= -PlaneMoveRadiusZ)
+				{
+					NewPlaneLocation.Z = DefaultCameraLocation.Z + PlaneMoveRadiusZ - 1;
+				}
+				if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y >= PlaneMoveRadiusY)
+				{
+					NewPlaneLocation.Y = DefaultCameraLocation.Y - PlaneMoveRadiusY + 1;
+				}
+				else if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y <= -PlaneMoveRadiusY)
+				{
+					NewPlaneLocation.Y = DefaultCameraLocation.Y + PlaneMoveRadiusY - 1;
+				}
+				Plane->SetActorLocation(NewPlaneLocation);
 			}
-			else if (CurrentPlaneLocation.Z - DefaultCameraLocation.Z <= -PlaneMoveRadiusZ)
+			else
 			{
-				NewPlaneLocation.Z = DefaultCameraLocation.Z + PlaneMoveRadiusZ - 1;
+				FVector CurrentPlaneLocation = Plane->GetActorLocation();
+				CurrentPlaneLocation.X = 0;
+				FVector CurrentCameraLocation = GetActorLocation();
+				CurrentCameraLocation.X = 0;
+				float Distance = FVector::Dist(CurrentPlaneLocation, CurrentCameraLocation);
+				if (Distance > PlaneMoveRadius)
+				{
+					FVector Direction = FVector(CurrentPlaneLocation - CurrentCameraLocation);
+					Direction.Normalize();
+					FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
+					SetActorLocation(GetActorLocation() + CameraMove);
+				}
 			}
-			if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y >= PlaneMoveRadiusY)
-			{
-				NewPlaneLocation.Y = DefaultCameraLocation.Y - PlaneMoveRadiusY + 1;
-			}
-			else if (CurrentPlaneLocation.Y - DefaultCameraLocation.Y <= -PlaneMoveRadiusY)
-			{
-				NewPlaneLocation.Y = DefaultCameraLocation.Y + PlaneMoveRadiusY - 1;
-			}
-			Plane->SetActorLocation(NewPlaneLocation);
-
-
-			//CurrentPlaneLocation.X = 0;
-			//FVector CurrentCameraLocation = GetActorLocation();
-			//CurrentCameraLocation.X = 0;
-			//float Distance = FVector::Dist(CurrentPlaneLocation, CurrentCameraLocation);
-			//if (Distance > PlaneMoveRadius)
-			//{
-			//	FVector Direction = FVector(CurrentPlaneLocation - CurrentCameraLocation);
-			//	Direction.Normalize();
-			//	FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
-			//	SetActorLocation(GetActorLocation() + CameraMove);
-			//}
 		}
 	}
 }

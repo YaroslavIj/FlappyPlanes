@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Projectile.h"
+#include "NiagaraComponent.h"
 //
 #include "FlappyPlane.generated.h"
 
@@ -15,6 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFuelChanged, float, NewFuel);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnProjectilesAmountChanged, float, NewProjectilesAmount);
 
 class AGamePawn;
+class AWorldDynamicShadow;
 
 UCLASS()
 class FLAPPYPLANES_API AFlappyPlane : public AActor
@@ -66,6 +68,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float LiftCoefficient = 5.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float LiftDragCoef = 0.1;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float SpeedUpOffsetAngle = 30.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float SpeedUpOffsetForce = 20000;
@@ -83,11 +87,25 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MaxRotationRate = 45;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float AlignSpeed = 90.f;
+	float RotationAcceleration = 90.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
-	float FlipSpeed = 90.f;
+	float FlipSpeed = 90.f;	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float MaxFallRotationSpeed = 180.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float MinFallRotationSpeed = 10.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float FallRotationAcceleration = 180.f;
+	UPROPERTY(BlueprintReadWrite)
+	float CurrentFallRotationSpeed = 0;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float AngularDistanceToSlowFallRoation = 30.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float MovementForceWhileFlip = 1000000;
 
 	bool bNeedToFlip = false;
+	bool bReturnFlip = false;
+	float DegreeceToReturnFlip;
 	UPROPERTY(BlueprintReadWrite)
 	float CurrentFlipRotation = 0.f;
 	//Fuel
@@ -106,6 +124,10 @@ protected:
 	int32 MaxProjectilesAmount = 30;
 	UPROPERTY(ReplicatedUsing = OnRep_ProjectilesAmount, BlueprintReadWrite, Category = "Fire")
 	int32 ProjectilesAmount;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	float CollisionDamageForSelf = 10.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	float CollisionDamageForOther = 20.f;
 	//Sounds
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FlightSound = nullptr;
@@ -124,6 +146,22 @@ protected:
 	bool bIsGameStarted = false;
 
 	void Dead();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FX")
+	UNiagaraSystem* SpeedUpStartNiagara = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FX")
+	UNiagaraSystem* SpeedUpNiagara = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FX")
+	FTransform SpeedUpFXSpawnTransform;
+	UNiagaraComponent* SpeedUpNiagaraComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<FVector> LiftForcePoints;
+	UPROPERTY(BlueprintReadWrite)
+	AWorldDynamicShadow* DynamicShadow = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<AWorldDynamicShadow> WorldDynamicShadowClass;
+
 public:
 
 	bool bIsFalling = false;
@@ -174,4 +212,12 @@ public:
 
 	UFUNCTION()
 	void OnOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnNiagaraAtLocation_Multicast(UNiagaraSystem* NiagaraFX, FTransform SpawnTransform);
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnSpeedUpNiagaraAttached_Multicast(UNiagaraSystem* NiagaraFX, FTransform SpawnTransform);
+	UFUNCTION(NetMulticast, Reliable)
+	void StopSpeedUpNiagara_Multicast();
+	UFUNCTION(NetMulticast, Reliable)
+	void CreateDynamicShadow_Multicast();
 };

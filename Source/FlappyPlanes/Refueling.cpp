@@ -33,6 +33,7 @@ void ARefueling::Tick(float DeltaTime)
 void ARefueling::Refill()
 {
 	Mesh->SetVisibility(true);
+	Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Block);
 	bIsFilled = true;
 }
 
@@ -50,6 +51,7 @@ void ARefueling::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 				if (bIsRefillable)
 				{
 					Mesh->SetVisibility(false);
+					Mesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Ignore);
 					bIsFilled = false;
 					if (GetWorld())
 					{
