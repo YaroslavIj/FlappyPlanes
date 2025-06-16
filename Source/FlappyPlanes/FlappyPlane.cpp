@@ -12,8 +12,9 @@ AFlappyPlane::AFlappyPlane()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	PlaneMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaneMesh"));
-	RootComponent = PlaneMesh;
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	RootComponent = Mesh;
+	//PlaneMesh->SetupAttachment(RootComponent);
 }
 void AFlappyPlane::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -24,15 +25,28 @@ void AFlappyPlane::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AFlappyPlane, ProjectilesAmount);
 	DOREPLIFETIME(AFlappyPlane, bIsSpeedUp);
 	DOREPLIFETIME(AFlappyPlane, PawnOwner);
+	DOREPLIFETIME(AFlappyPlane, CurrentProjectilesType);
 }
 
 void AFlappyPlane::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	ProjectilesAmount = MaxProjectilesAmount;
+
 	OnProjectilesAmountChanged.Broadcast(ProjectilesAmount);
 
+	if(GetLocalRole() == ROLE_Authority)
+	{
+		if (ProjectileTypes.IsValidIndex(0))
+		{
+			CurrentProjectilesType = ProjectileTypes[0];
+			ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
+		}
+		for (FProjectilesSettings ProjectilesSettings : ProjectileTypes)
+		{
+			SetMaxProjectilesByTypeOnWidget_Multicast(ProjectilesSettings.MaxProjectilesAmount, ProjectilesSettings.ProjectileClass);
+		}
+	}
 	OnActorBeginOverlap.AddDynamic(this, &AFlappyPlane::OnOverlap);
 }
 
@@ -65,9 +79,9 @@ void AFlappyPlane::SetIsSpeedUp_Server_Implementation(bool InbIsSpeedUp)
 			//SpawnSpeedUpNiagaraAttached_Multicast(SpeedUpNiagara, SpawnTransform);
 			bIsFalling = false;
 			CurrentFallRotationSpeed = 0;
-			if (PlaneMesh)
+			if (Mesh)
 			{
-				PlaneMesh->SetEnableGravity(false);
+				//Mesh->SetEnableGravity(false);
 			}
 		}
 	}
@@ -80,9 +94,9 @@ void AFlappyPlane::SetIsSpeedUp_Server_Implementation(bool InbIsSpeedUp)
 				//SpeedUpNiagaraComponent->DestroyComponent();
 			}
 			StopSpeedUpNiagara_Multicast();
-			if (PlaneMesh)
+			if (Mesh)
 			{
-				PlaneMesh->SetEnableGravity(true);
+				Mesh->SetEnableGravity(true);
 			}
 			//ChangeFlightSound_Multicast(FlightSound, FlightSoundVolume);
 		}
@@ -100,22 +114,25 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 {
 	if(GetLocalRole() == ROLE_Authority)
 	{
-		if(PlaneMesh->IsSimulatingPhysics())
+		if(Mesh && Mesh->IsSimulatingPhysics())
 		{
 			FVector LastLocation = GetActorLocation();
 			FVector ForwardVector = GetActorForwardVector();
 			ForwardVector.X = 0;
 			//AddActorWorldOffset(ForwardVector * ForwardSpeed * DeltaTime);
 			//PlaneMesh->AddForce(ForwardVector * ForwardSpeed);
-			float Speed = PlaneMesh->GetPhysicsLinearVelocity().Length();
-			PlaneMesh->AddForce(-PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
+			float Speed = Mesh->GetPhysicsLinearVelocity().Length();
+			Mesh->AddForce(-Mesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
 			
 			//PlaneMesh->AddForce(-PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
 			if (bIsSpeedUp && Fuel - FuelConsumption * DeltaTime >= 0)
 			{
-				/*FVector LiftVector = GetActorUpVector();
-				float LiftForce = 0.5 * Speed * Speed * LiftCoefficient * AirDensity;*/
-
+				FVector LiftVector = GetActorUpVector();
+				FVector Velocity = Mesh->GetPhysicsLinearVelocity();
+				FVector Forward = GetActorForwardVector();
+				float ForwardSpeed = FVector::CrossProduct(Forward, Velocity).Length();
+				float LiftForce = 0.5 * ForwardSpeed * ForwardSpeed * LiftCoefficient * AirDensity;
+				Mesh->AddForce(LiftVector * LiftForce);
 
 				float YOffset = FMath::Cos(FMath::DegreesToRadians(SpeedUpOffsetAngle));
 				float ZOffset = FMath::Sin(FMath::DegreesToRadians(SpeedUpOffsetAngle));
@@ -124,7 +141,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 					YOffset = -YOffset;
 				}
 				UpwardOffsetDirection = FVector(0, YOffset, ZOffset);
-				PlaneMesh->AddForce(UpwardOffsetDirection * SpeedUpOffsetForce);
+				Mesh->AddForce(UpwardOffsetDirection * SpeedUpOffsetForce);
 				/*	if (ForwardSpeed + AccelerationSpeed * DeltaTime < MaxForwardSpeed)
 				{
 					ForwardSpeed += AccelerationSpeed * DeltaTime;
@@ -146,7 +163,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 				{
 					CurrentForceWhileSpeedUp = SpeedUpForce;
 				}
-				PlaneMesh->AddForce(ForwardVector * CurrentForceWhileSpeedUp);
+				Mesh->AddForce(ForwardVector * CurrentForceWhileSpeedUp);
 				
 				if (RotationRate + RotationAcceleration * DeltaTime <= MaxRotationRate)
 				{
@@ -249,6 +266,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 							else
 							{
 								bReturnFlip = !bReturnFlip;
+								//UE_LOG(LogTemp, Warning, TEXT("bReturnFlip = %f"), bReturnFlip);
 							}
 						}
 						//else
@@ -302,6 +320,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 							else 
 							{
 								bReturnFlip = !bReturnFlip;
+								//UE_LOG(LogTemp, Warning, TEXT("bReturnFlip = %f"), bReturnFlip);
 							}
 							
 						}
@@ -326,7 +345,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 						}*/
 					}
 					
-					CurrentForceWhileSpeedUp = 0;
+					CurrentForceWhileSpeedUp = MinSpeedUpForce;
 					
 					RotationRate = MinRotationRate;
 					if(CurrentAngularDistance > FMath::DegreesToRadians(AngularDistanceToSlowFallRoation))
@@ -375,7 +394,7 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 
 			if (bNeedToFlip)
 			{
-				PlaneMesh->AddForce(ForwardVector* MovementForceWhileFlip);
+				Mesh->AddForce(ForwardVector* MovementForceWhileFlip);
 
 				//FQuat CurrentQuat = GetActorQuat();
 				//FQuat TargetQuat = FQuat(RotationAxis, FMath::DegreesToRadians(180)) * InitialRotationForFlip;
@@ -409,6 +428,10 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 					bNeedToFlip = false;
 					bReturnFlip = false;
 					CurrentFlipRotation = 180.f - TargetFlipRotation;
+					if (TargetFlipRotation < 1)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("TargetFlipRotation = 0"));
+					}
 					//bIsMovingForward = !bIsMovingForward;
 
 				}
@@ -422,6 +445,11 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 				}
 				
 				
+			}
+			if (!FMath::IsNearlyEqual(GetActorLocation().X, PlaneXPosition, 5))
+			{
+				FVector NewLocation = FVector(PlaneXPosition, GetActorLocation().Y, GetActorLocation().Z);
+				SetActorLocation(NewLocation);
 			}
 		}
 	}
@@ -448,7 +476,7 @@ void AFlappyPlane::Fire()
 	{
 		if (ProjectilesAmount > 0)
 		{
-			if (GetWorld() && ProjectileClass)
+			if (GetWorld() && CurrentProjectilesType.ProjectileClass)
 			{
 				FTransform SpawnTransform;
 				FVector RelativeLocation = GetActorForwardVector() * FireLocation.X + GetActorRightVector() * FireLocation.Y + GetActorUpVector() * FireLocation.Z;
@@ -456,8 +484,8 @@ void AFlappyPlane::Fire()
 				SpawnTransform.SetRotation(GetActorQuat());
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.Owner = this;
-				GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnTransform, SpawnParams);
-				GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, FireRate, false);
+				GetWorld()->SpawnActor<AProjectile>(CurrentProjectilesType.ProjectileClass, SpawnTransform, SpawnParams);
+				GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, CurrentProjectilesType.FireRate, false);
 
 				if (!bHasInfiniteAmmo)
 				{
@@ -495,13 +523,13 @@ void AFlappyPlane::ReceiveDamage(float Damage)
 
 void AFlappyPlane::StartGame()
 {
-	if (PlaneMesh)
+	if (Mesh)
 	{
 		bIsGameStarted = true;
-		PlaneMesh->SetSimulatePhysics(true);
+		Mesh->SetSimulatePhysics(true);
 		RotationRate = MinRotationRate;
 		FVector ImpulseDirection = GetActorForwardVector();
-		PlaneMesh->AddImpulse(ImpulseDirection * StartImpulse);
+		Mesh->AddImpulse(ImpulseDirection * StartImpulse);
 	}
 }
 
@@ -524,25 +552,25 @@ void AFlappyPlane::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 						float DeltaRotationForOther = FMath::RadiansToDegrees(OtherPlane->GetActorQuat().AngularDistance(FQuat(TargetRotationForOther)));
 						if (DeltaRotationForSelf < 45)
 						{
-							FVector ImpulceDirection = PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							OtherPlane->PlaneMesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
-							PlaneMesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
+							FVector ImpulceDirection = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
+							OtherPlane->Mesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
+							Mesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
 							ReceiveDamage(CollisionDamageForSelf);
 							OtherPlane->ReceiveDamage(CollisionDamageForOther);
 						}
 						if (DeltaRotationForOther < 45)
 						{
-							FVector ImpulceDirection = OtherPlane->PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							PlaneMesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
-							OtherPlane->PlaneMesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
+							FVector ImpulceDirection = OtherPlane->Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
+							Mesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
+							OtherPlane->Mesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
 							ReceiveDamage(CollisionDamageForOther);
 							OtherPlane->ReceiveDamage(CollisionDamageForSelf);
 						}
 						if (DeltaRotationForSelf > 45 && DeltaRotationForOther > 45)
 						{
 							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-							OtherPlane->PlaneMesh->AddImpulse(Direction * CollisionImpulceForSelf);
-							PlaneMesh->AddImpulse(Direction * -CollisionImpulceForSelf);
+							OtherPlane->Mesh->AddImpulse(Direction * CollisionImpulceForSelf);
+							Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);
 							ReceiveDamage(CollisionDamageForSelf);
 							OtherPlane->ReceiveDamage(CollisionDamageForSelf);
 						}
@@ -552,9 +580,35 @@ void AFlappyPlane::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 			else if(!OtherActor->IsA(AProjectile::StaticClass()))
 			{
 				FVector Direction = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-				PlaneMesh->AddImpulse(Direction * -CollisionImpulceForSelf);
+				Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);
 				ReceiveDamage(CollisionDamageForSelf);
 			}
+		}
+	}
+}
+
+void AFlappyPlane::SetMaxProjectilesByTypeOnWidget_Multicast_Implementation(float MaxProjectiles, TSubclassOf<AProjectile> Type)
+{
+	//BP
+}
+
+void AFlappyPlane::NextProjectilesType_Server_Implementation()
+{
+	for (int32 i = 0; i < ProjectileTypes.Num(); i++)
+	{
+		if (CurrentProjectilesType.ProjectileClass == ProjectileTypes[i].ProjectileClass)
+		{
+			ProjectileTypes[i].ProjectilesAmount = ProjectilesAmount;
+			if (ProjectileTypes.IsValidIndex(i + 1))
+			{
+				CurrentProjectilesType = ProjectileTypes[i + 1];
+			}
+			else
+			{
+				CurrentProjectilesType = ProjectileTypes[0];
+			}
+			ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
+			return;
 		}
 	}
 }
@@ -584,7 +638,7 @@ void AFlappyPlane::SpawnSpeedUpNiagaraAttached_Multicast_Implementation(UNiagara
 {
 	if (NiagaraFX)
 	{
-		SpeedUpNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraFX, PlaneMesh, NAME_None, SpawnTransform.GetLocation(), SpawnTransform.GetRotation().Rotator(), EAttachLocation::KeepWorldPosition, true, true);
+		SpeedUpNiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraFX, Mesh, NAME_None, SpawnTransform.GetLocation(), SpawnTransform.GetRotation().Rotator(), EAttachLocation::KeepWorldPosition, true, true);
 		//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FX, SpeedUpStartFXSpawnTransform,);
 	}
 }
@@ -615,15 +669,9 @@ void AFlappyPlane::OnRep_ProjectilesAmount_Implementation()
 
 void AFlappyPlane::ChangeFlightSoundVolumeTick_Multicast_Implementation(float DeltaTime)
 {	
-	//if (CurrentFlightSound)
-	//{
-	//	//CurrentFlightSound->Stop();
-	//	//CurrentFlightSound->DestroyComponent();
-
-	//}
 	if(!CurrentFlightSound)
 	{
-		CurrentFlightSound = UGameplayStatics::SpawnSoundAttached(FlightSound, PlaneMesh, NAME_None, FVector(0), EAttachLocation::SnapToTarget, false, FlightSoundVolume);
+		CurrentFlightSound = UGameplayStatics::SpawnSoundAttached(FlightSound, Mesh, NAME_None, FVector(0), EAttachLocation::SnapToTarget, false, FlightSoundVolume);
 	}
 	if(CurrentFlightSound && CurrentFlightSound->IsPlaying())
 	{
@@ -640,5 +688,13 @@ void AFlappyPlane::ChangeFlightSoundVolumeTick_Multicast_Implementation(float De
 		{
 			CurrentFlightSound->SetVolumeMultiplier(CurrentFlightSound->VolumeMultiplier + ChangeRate);
 		}
+	}
+}
+
+void AFlappyPlane::FillProjectilesAmount()
+{
+	for (FProjectilesSettings Type : ProjectileTypes)
+	{
+		SetMaxProjectilesByTypeOnWidget_Multicast(Type.MaxProjectilesAmount, Type.ProjectileClass);
 	}
 }

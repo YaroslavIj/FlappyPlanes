@@ -107,6 +107,7 @@ void AGamePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	PlayerInputComponent->BindAction("SpeedUp", IE_Released, this, &AGamePawn::CancelSpeedUp);
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AGamePawn::Fire);
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AGamePawn::CancelFire);
+	PlayerInputComponent->BindAction("NextProjectilesType", IE_Pressed, this, &AGamePawn::NextProjectilesType);
 }
 
 void AGamePawn::SpeedUp()
@@ -134,6 +135,14 @@ void AGamePawn::Fire()
 void AGamePawn::CancelFire()
 {
 	Fire_Server(false);
+}
+
+void AGamePawn::NextProjectilesType()
+{
+	if (Plane)
+	{
+		Plane->NextProjectilesType_Server();
+	}
 }
 
 void AGamePawn::Fire_Server_Implementation(bool bIsSpeedUp)

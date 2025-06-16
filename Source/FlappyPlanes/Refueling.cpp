@@ -47,7 +47,7 @@ void ARefueling::OnOverlap(AActor* OverlappedActor, AActor* OtherActor)
 			{
 				Plane->FillFuel();
 				Plane->ReceiveDamage(-HealthRecovery);
-				Plane->SetProjectilesAmount(Plane->GetMaxProjectilesAmount());
+				Plane->FillProjectilesAmount();
 				if (bIsRefillable)
 				{
 					Mesh->SetVisibility(false);

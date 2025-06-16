@@ -30,17 +30,17 @@ void AProjectile::BeginPlay()
 void AProjectile::OnProjectileOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
 	if(GetLocalRole() == ROLE_Authority)
-	{
-		if (OtherActor->IsA(AFlappyPlane::StaticClass()))
+	{	
+		if(OtherActor != GetOwner())
 		{
-			if(OtherActor != GetOwner())
+			if (OtherActor->IsA(AFlappyPlane::StaticClass()))
 			{
 				if (AFlappyPlane* Plane = Cast<AFlappyPlane>(OtherActor))
 				{
 					Plane->ReceiveDamage(Damage);
-					Hit_Multicast(HitSound, HitFX);
 				}
-			}
+			}	
+			Hit_Multicast(HitSound, HitFX);
 		}
 	}
 }

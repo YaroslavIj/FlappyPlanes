@@ -58,4 +58,7 @@ public:
 	void SpeedUp_Server(bool bIsSpeedUp);
 	UFUNCTION(Server, Reliable)
 	void Fire_Server(bool bIsSpeedUp);
+
+	UFUNCTION()
+	void NextProjectilesType();
 };

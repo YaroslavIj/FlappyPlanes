@@ -32,7 +32,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UStaticMeshComponent* PlaneMesh = nullptr;
+	UStaticMeshComponent* Mesh = nullptr;
 
 	UPROPERTY(Replicated)
 	bool bIsSpeedUp = false;
@@ -55,6 +55,8 @@ protected:
 	float SpeedUpForce = 6000000.0f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float CurrentForceWhileSpeedUp = 6000000.0f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float MinSpeedUpForce = 6000000.0f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float AccelerationForce = 4000000.0f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
@@ -102,8 +104,11 @@ protected:
 	float AngularDistanceToSlowFallRoation = 30.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float MovementForceWhileFlip = 1000000;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float PlaneXPosition = -920;
+	UPROPERTY(BlueprintReadWrite)
 	bool bNeedToFlip = false;
+	UPROPERTY(BlueprintReadWrite)
 	bool bReturnFlip = false;
 	float DegreeceToReturnFlip;
 	UPROPERTY(BlueprintReadWrite)
@@ -114,20 +119,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fuel")
 	float FuelConsumption = 0.05;
 	//Fire
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	float FireRate = 0.5f;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	TSubclassOf<AProjectile> ProjectileClass;
+	UPROPERTY(Replicated, BlueprintReadWrite)
+	FProjectilesSettings CurrentProjectilesType;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	FVector FireLocation;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	int32 MaxProjectilesAmount = 30;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	//int32 MaxProjectilesAmount = 30;
 	UPROPERTY(ReplicatedUsing = OnRep_ProjectilesAmount, BlueprintReadWrite, Category = "Fire")
 	int32 ProjectilesAmount;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	float CollisionDamageForSelf = 10.f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	float CollisionDamageForOther = 20.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	TArray<FProjectilesSettings> ProjectileTypes;
+
 	//Sounds
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FlightSound = nullptr;
@@ -188,8 +194,8 @@ public:
 	FORCEINLINE float GetCurrentFuel() { return Fuel; };
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetCurrentProjectilesAmount() { return ProjectilesAmount; };
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetMaxProjectilesAmount() { return MaxProjectilesAmount; };
+	/*UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetMaxProjectilesAmount() { return MaxProjectilesAmount; };*/
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetProjectilesAmount(float NewProjectilesAmount) { ProjectilesAmount = NewProjectilesAmount; };
 	UFUNCTION(BlueprintCallable)
@@ -220,4 +226,10 @@ public:
 	void StopSpeedUpNiagara_Multicast();
 	UFUNCTION(NetMulticast, Reliable)
 	void CreateDynamicShadow_Multicast();
+	UFUNCTION(Server, Reliable)
+	void NextProjectilesType_Server();
+	UFUNCTION(NetMulticast, Reliable)
+	void SetMaxProjectilesByTypeOnWidget_Multicast(float MaxProjectiles, TSubclassOf<AProjectile> Type);
+	UFUNCTION(BlueprintCallable)
+	void FillProjectilesAmount();
 };

@@ -8,6 +8,25 @@
 //
 #include "Projectile.generated.h"
 
+class AProjectile;
+USTRUCT(BlueprintType)
+struct FProjectilesSettings
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<AProjectile> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float FireRate = 0.1f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ProjectilesAmount = 50;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxProjectilesAmount = 50;
+};
+
 UCLASS()
 class FLAPPYPLANES_API AProjectile : public AActor
 {
@@ -33,6 +52,7 @@ protected:
 	UParticleSystem* HitFX = nullptr;
 	UFUNCTION()
 	void OnProjectileOverlap(AActor* OverlappedActor, AActor* OtherActor);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
