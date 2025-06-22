@@ -33,6 +33,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* Mesh = nullptr;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	//UStaticMeshComponent* OverlapMesh = nullptr;
 
 	UPROPERTY(Replicated)
 	bool bIsSpeedUp = false;
@@ -168,6 +170,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TSubclassOf<AWorldDynamicShadow> WorldDynamicShadowClass;
 
+	FVector LastVelocity;
+	FQuat LastRotation;
+
 public:
 
 	bool bIsFalling = false;
@@ -217,7 +222,7 @@ public:
 	void OnRep_ProjectilesAmount();
 
 	UFUNCTION()
-	void OnOverlap(AActor* OverlappedActor, AActor* OtherActor);
+	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION(NetMulticast, Reliable)
 	void SpawnNiagaraAtLocation_Multicast(UNiagaraSystem* NiagaraFX, FTransform SpawnTransform);
 	UFUNCTION(NetMulticast, Reliable)
@@ -232,4 +237,6 @@ public:
 	void SetMaxProjectilesByTypeOnWidget_Multicast(float MaxProjectiles, TSubclassOf<AProjectile> Type);
 	UFUNCTION(BlueprintCallable)
 	void FillProjectilesAmount();
+	UFUNCTION()
+	void OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit);
 };
