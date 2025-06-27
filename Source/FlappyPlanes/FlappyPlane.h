@@ -130,9 +130,9 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ProjectilesAmount, BlueprintReadWrite, Category = "Fire")
 	int32 ProjectilesAmount;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	float CollisionDamageForSelf = 10.f;
+	float CollisionDamageForSelf = 0.008f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	float CollisionDamageForOther = 20.f;
+	float CollisionDamageForOther = 0.016f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	TArray<FProjectilesSettings> ProjectileTypes;
 
@@ -153,6 +153,7 @@ protected:
 	float Health = 100.f;
 	bool bIsGameStarted = false;
 
+	UFUNCTION(BlueprintCallable)
 	void Dead();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FX")
