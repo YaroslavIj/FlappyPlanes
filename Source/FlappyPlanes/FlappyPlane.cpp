@@ -14,6 +14,7 @@ AFlappyPlane::AFlappyPlane()
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	RootComponent = Mesh;
+	Mesh->SetAngularDamping(99999999.f);
 	//OverlapMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OverlapMesh"));
 	//OverlapMesh->SetupAttachment(RootComponent);
 }
@@ -49,7 +50,8 @@ void AFlappyPlane::BeginPlay()
 		}
 	}
 	//OnActorBeginOverlap.AddDynamic(this, &AFlappyPlane::OnOverlap);
-	//OnActorHit.AddDynamic(this, &AFlappyPlane::OnHit);
+	//OverlapMesh->OnComponentBeginOverlap.AddDynamic(this, &AFlappyPlane::OnOverlap);
+	OnActorHit.AddDynamic(this, &AFlappyPlane::OnHit);
 	Mesh->OnComponentBeginOverlap.AddDynamic(this, &AFlappyPlane::OnOverlap);
 }
 
@@ -475,10 +477,10 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 				SetActorLocation(NewLocation);
 			}
 		}
-		if(LastVelocity.Length() - Mesh->GetPhysicsLinearVelocity().Length() > 1000.f)
+		//if(LastVelocity.Length() - Mesh->GetPhysicsLinearVelocity().Length() > 1000.f)
 		{
-			LastVelocity = Mesh->GetPhysicsLinearVelocity();
-			LastRotation = GetActorQuat();
+			//LastVelocity = Mesh->GetPhysicsLinearVelocity();
+			//LastRotation = GetActorQuat();
 		}
 	}
 }
@@ -565,78 +567,81 @@ void AFlappyPlane::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 {
 	if(GetLocalRole() == ROLE_Authority)
 	{
-		if (OtherActor)
-		{		
-			FVector SelfVelocity = Mesh->GetPhysicsLinearVelocity();
-			if (OtherActor->IsA(AFlappyPlane::StaticClass()))
-			{
-				if (this < OtherActor) //Logic must run once
-				{
-					if(AFlappyPlane* OtherPlane = Cast<AFlappyPlane>(OtherActor))
-					{
-						FVector OtherVelocity = OtherPlane->Mesh->GetPhysicsLinearVelocity();
-						//Find collsion rotation
-						FRotator TargetRotationForSelf = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), OtherActor->GetActorLocation());
-						float DeltaRotationForSelf = FMath::RadiansToDegrees(GetActorQuat().AngularDistance(FQuat(TargetRotationForSelf)));
-						FRotator TargetRotationForOther = UKismetMathLibrary::FindLookAtRotation(OtherActor->GetActorLocation(), GetActorLocation());
-						float DeltaRotationForOther = FMath::RadiansToDegrees(OtherPlane->GetActorQuat().AngularDistance(FQuat(TargetRotationForOther)));
-						
-						if (DeltaRotationForSelf < 45 && DeltaRotationForOther > 45)
-						{
-							float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
-							float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
-							FVector ImpulceDirection = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
-							Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
-							ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForOther);
-						}
-						if (DeltaRotationForOther < 45 && DeltaRotationForSelf > 45)
-						{
-							float SelfSpeedRelativeOtherVelocity = -FVector::DotProduct(OtherVelocity.GetSafeNormal(), SelfVelocity);
-							float OverallSpeed = OtherVelocity.Length() + SelfSpeedRelativeOtherVelocity;
-							FVector ImpulceDirection = OtherPlane->Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
-							OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
-							ReceiveDamage(OverallSpeed * CollisionDamageForOther);
-							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-						}
-						if (DeltaRotationForSelf < 45 && DeltaRotationForOther < 45)
-						{
-							float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
-							float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
-							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-							OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForSelf);
-							Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForSelf);
-							ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-						}
-					}
-				}				
-			}
-			else if(!OtherActor->IsA(AProjectile::StaticClass()))
-			{
-				//FVector Direction = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-			/*	FVector Direction = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
+		//if (OtherActor)
+		//{		
+		//	FVector SelfVelocity = Mesh->GetPhysicsLinearVelocity();
+		//	if (OtherActor->IsA(AFlappyPlane::StaticClass()))
+		//	{
+		//		if (this < OtherActor) //Logic must run once
+		//		{
+		//			if(AFlappyPlane* OtherPlane = Cast<AFlappyPlane>(OtherActor))
+		//			{
+		//				FVector OtherVelocity = OtherPlane->Mesh->GetPhysicsLinearVelocity();
+		//				//Find collsion rotation
+		//				FRotator TargetRotationForSelf = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), OtherActor->GetActorLocation());
+		//				float DeltaRotationForSelf = FMath::RadiansToDegrees(GetActorQuat().AngularDistance(FQuat(TargetRotationForSelf)));
+		//				FRotator TargetRotationForOther = UKismetMathLibrary::FindLookAtRotation(OtherActor->GetActorLocation(), GetActorLocation());
+		//				float DeltaRotationForOther = FMath::RadiansToDegrees(OtherPlane->GetActorQuat().AngularDistance(FQuat(TargetRotationForOther)));
+		//				
+		//				if (DeltaRotationForSelf < 45 && DeltaRotationForOther > 45)
+		//				{
+		//					float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
+		//					float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
+		//					FVector ImpulceDirection = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
+		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
+		//					Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
+		//					ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForOther);
+		//				}
+		//				if (DeltaRotationForOther < 45 && DeltaRotationForSelf > 45)
+		//				{
+		//					float SelfSpeedRelativeOtherVelocity = -FVector::DotProduct(OtherVelocity.GetSafeNormal(), SelfVelocity);
+		//					float OverallSpeed = OtherVelocity.Length() + SelfSpeedRelativeOtherVelocity;
+		//					FVector ImpulceDirection = OtherPlane->Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
+		//					Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
+		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
+		//					ReceiveDamage(OverallSpeed * CollisionDamageForOther);
+		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+		//				}
+		//				if (DeltaRotationForSelf < 45 && DeltaRotationForOther < 45)
+		//				{
+		//					float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
+		//					float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
+		//					FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForSelf);
+		//					Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForSelf);
+		//					ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+		//				}
+		//			}
+		//		}				
+		//	}
+		//	else if(!OtherActor->IsA(AProjectile::StaticClass()))
+		//	{
+		//		//FVector Direction = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		//	/*	FVector Direction = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
 
-				Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-				Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-				Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);*/
+		//		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		//		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		//		Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);*/
 
-				ReceiveDamage(SelfVelocity.Length() * CollisionDamageForSelf);
+		//		ReceiveDamage(SelfVelocity.Length() * CollisionDamageForSelf);
 
-				/*FVector Velocity = Mesh->GetPhysicsLinearVelocity();
-				FVector SurfaceNormal = SweepResult.ImpactNormal.GetSafeNormal();
-				float ImpactAngle = FMath::Acos(FVector::DotProduct(SweepResult.ImpactNormal, -LastVelocity.GetSafeNormal()));
-				FVector ImpulsDirection = Velocity - 2 * FVector::DotProduct(Velocity, SurfaceNormal) * SurfaceNormal;
-				ImpulsDirection.Normalize();
-				DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + ImpulsDirection * 2000.f, FColor::Red, false, 3.f);
-				Mesh->AddImpulse(ImpulsDirection * CollisionImpulceForSelf);*/
+		//		/*FVector Velocity = Mesh->GetPhysicsLinearVelocity();
+		//		FVector SurfaceNormal = SweepResult.ImpactNormal.GetSafeNormal();
+		//		float ImpactAngle = FMath::Acos(FVector::DotProduct(SweepResult.ImpactNormal, -LastVelocity.GetSafeNormal()));
+		//		FVector ImpulsDirection = Velocity - 2 * FVector::DotProduct(Velocity, SurfaceNormal) * SurfaceNormal;
+		//		ImpulsDirection.Normalize();
+		//		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + ImpulsDirection * 2000.f, FColor::Red, false, 3.f);
+		//		Mesh->AddImpulse(ImpulsDirection * CollisionImpulceForSelf);*/
 
-				Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-				Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-			}
-		}
+		//		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		//		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		//	}
+		//}
+
+		LastVelocity = Mesh->GetPhysicsLinearVelocity();
+		LastRotation = GetActorQuat();
 	}
 }
 
@@ -758,41 +763,49 @@ void AFlappyPlane::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalIm
 	{
 		if(!OtherActor->IsA(AProjectile::StaticClass()))
 		{
-			
+			FVector SelfVelocity = Mesh->GetPhysicsLinearVelocity();
 			if (OtherActor->IsA(AFlappyPlane::StaticClass()))
 			{
 				if (this < OtherActor) //Logic must run once
 				{
 					if (AFlappyPlane* OtherPlane = Cast<AFlappyPlane>(OtherActor))
 					{
+						FVector OtherVelocity = OtherPlane->Mesh->GetPhysicsLinearVelocity();
 						//Find collsion rotation
 						FRotator TargetRotationForSelf = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), OtherActor->GetActorLocation());
 						float DeltaRotationForSelf = FMath::RadiansToDegrees(GetActorQuat().AngularDistance(FQuat(TargetRotationForSelf)));
 						FRotator TargetRotationForOther = UKismetMathLibrary::FindLookAtRotation(OtherActor->GetActorLocation(), GetActorLocation());
 						float DeltaRotationForOther = FMath::RadiansToDegrees(OtherPlane->GetActorQuat().AngularDistance(FQuat(TargetRotationForOther)));
-						if (DeltaRotationForSelf < 45)
+
+						if (DeltaRotationForSelf < 45 && DeltaRotationForOther > 45)
 						{
+							float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
+							float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
 							FVector ImpulceDirection = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							OtherPlane->Mesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
-							Mesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
-							ReceiveDamage(CollisionDamageForSelf);
-							OtherPlane->ReceiveDamage(CollisionDamageForOther);
+							OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
+							Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
+							ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForOther);
 						}
-						if (DeltaRotationForOther < 45)
+						if (DeltaRotationForOther < 45 && DeltaRotationForSelf > 45)
 						{
+							float SelfSpeedRelativeOtherVelocity = -FVector::DotProduct(OtherVelocity.GetSafeNormal(), SelfVelocity);
+							float OverallSpeed = OtherVelocity.Length() + SelfSpeedRelativeOtherVelocity;
 							FVector ImpulceDirection = OtherPlane->Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-							Mesh->AddImpulse(ImpulceDirection * CollisionImpulceForOther);
-							OtherPlane->Mesh->AddImpulse(ImpulceDirection * -CollisionImpulceForSelf);
-							ReceiveDamage(CollisionDamageForOther);
-							OtherPlane->ReceiveDamage(CollisionDamageForSelf);
+							Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
+							OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
+							ReceiveDamage(OverallSpeed * CollisionDamageForOther);
+							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
 						}
-						if (DeltaRotationForSelf > 45 && DeltaRotationForOther > 45)
+						if (DeltaRotationForSelf < 45 && DeltaRotationForOther < 45)
 						{
+							float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
+							float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
 							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-							OtherPlane->Mesh->AddImpulse(Direction * CollisionImpulceForSelf);
-							Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);
-							ReceiveDamage(CollisionDamageForSelf);
-							OtherPlane->ReceiveDamage(CollisionDamageForSelf);
+							OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForSelf);
+							Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForSelf);
+							ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
+							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
 						}
 					}
 				}
@@ -800,12 +813,12 @@ void AFlappyPlane::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalIm
 			else
 			{
 				//FVector Velocity = Mesh->GetPhysicsLinearVelocity();
-				FVector SurfaceNormal = Hit.ImpactNormal.GetSafeNormal();
+				/*FVector SurfaceNormal = Hit.ImpactNormal.GetSafeNormal();
 				float ImpactAngle = FMath::Acos(FVector::DotProduct(Hit.ImpactNormal, -LastVelocity.GetSafeNormal()));
 				FVector ImpulsDirection = LastVelocity.GetSafeNormal() - 2 * FVector::DotProduct(LastVelocity.GetSafeNormal(), SurfaceNormal) * SurfaceNormal;
-				Mesh->AddImpulse(ImpulsDirection * CollisionImpulceForSelf);
+				Mesh->AddImpulse(ImpulsDirection * CollisionImpulceForSelf);*/
 			}
 		}
-		SetActorRotation(LastRotation);
+		//SetActorRotation(LastRotation);
 	}
 }
