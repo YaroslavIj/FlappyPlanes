@@ -33,8 +33,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* Mesh = nullptr;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	//UStaticMeshComponent* OverlapMesh = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UStaticMeshComponent* OverlapMesh = nullptr;
 
 	UPROPERTY(Replicated)
 	bool bIsSpeedUp = false;
@@ -170,9 +170,9 @@ protected:
 	AWorldDynamicShadow* DynamicShadow = nullptr;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TSubclassOf<AWorldDynamicShadow> WorldDynamicShadowClass;
-
+	UPROPERTY(BlueprintReadWrite)
 	FVector LastVelocity;
-	FQuat LastRotation;
+	AActor* HitedActor = nullptr;
 
 public:
 
