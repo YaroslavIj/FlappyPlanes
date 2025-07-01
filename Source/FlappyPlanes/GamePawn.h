@@ -41,6 +41,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	bool bMoveCamera = true;
+	UPROPERTY(EditDefaultsOnly)
+	float MaxDownCameraMove = -4330.f;
+
 public:	
 
 	UPROPERTY(BlueprintReadWrite)

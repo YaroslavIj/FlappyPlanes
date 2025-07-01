@@ -86,14 +86,46 @@ void AGamePawn::Tick(float DeltaTime)
 				CurrentPlaneLocation.X = 0;
 				FVector CurrentCameraLocation = GetActorLocation();
 				CurrentCameraLocation.X = 0;
-				float Distance = FVector::Dist(CurrentPlaneLocation, CurrentCameraLocation);
-				if (Distance > PlaneMoveRadius)
+
+
+				FVector Distance = CurrentPlaneLocation - CurrentCameraLocation;
+				float ZMove = 0;
+				float YMove = 0;
+				if (Distance.Z < -PlaneMoveRadiusZ)
+				{
+					ZMove = Distance.Z + PlaneMoveRadiusZ;
+					if (CurrentCameraLocation.Z + ZMove < MaxDownCameraMove)
+					{
+						ZMove = 0;
+					}
+				}
+				else if(Distance.Z > PlaneMoveRadiusZ)
+				{
+					ZMove = Distance.Z - PlaneMoveRadiusZ;
+				}
+				if (Distance.Y < -PlaneMoveRadiusY)
+				{
+					YMove = Distance.Y + PlaneMoveRadiusY;
+				}
+				else if (Distance.Y > PlaneMoveRadiusY)
+				{
+					YMove = Distance.Y - PlaneMoveRadiusY;
+				}
+
+				SetActorLocation(GetActorLocation() + FVector(0, YMove, ZMove));
+
+				/*if (Distance > PlaneMoveRadius)
 				{
 					FVector Direction = FVector(CurrentPlaneLocation - CurrentCameraLocation);
 					Direction.Normalize();
 					FVector CameraMove = Direction * (Distance - PlaneMoveRadius);
+					if (GetActorLocation().Z + CameraMove.Z < MaxDownCameraMove)
+					{
+						Direction.Z = 0;
+						CameraMove = Direction * (Distance - PlaneMoveRadius);
+					}
 					SetActorLocation(GetActorLocation() + CameraMove);
-				}
+				}*/
 			}
 		}
 	}

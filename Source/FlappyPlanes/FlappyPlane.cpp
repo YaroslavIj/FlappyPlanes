@@ -843,6 +843,16 @@ void AFlappyPlane::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalIm
 							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
 							OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForOther);
 							Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForOther);
+							ReceiveDamage(OverallSpeed * CollisionDamageForOther);
+							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForOther);
+						}
+						if (DeltaRotationForSelf > 45 && DeltaRotationForOther > 45)
+						{
+							float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
+							float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
+							FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+							OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForSelf);
+							Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForSelf);
 							ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
 							OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
 						}
