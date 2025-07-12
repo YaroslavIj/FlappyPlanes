@@ -173,7 +173,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	FVector LastVelocity;
 	AActor* HitedActor = nullptr;
-
 public:
 
 	bool bIsFalling = false;
@@ -240,4 +239,9 @@ public:
 	void FillProjectilesAmount();
 	UFUNCTION()
 	void OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnSoundAtLocation_Multicast(USoundBase* Sound, FVector Location, FRotator Rotation);
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnFXAtLocation_Multicast(UParticleSystem* FX, FVector Location, FRotator Rotation);
 };

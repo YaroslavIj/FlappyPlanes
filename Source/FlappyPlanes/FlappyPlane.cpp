@@ -41,11 +41,7 @@ void AFlappyPlane::BeginPlay()
 
 	if(GetLocalRole() == ROLE_Authority)
 	{
-		if (ProjectileTypes.IsValidIndex(0))
-		{
-			CurrentProjectilesType = ProjectileTypes[0];
-			ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
-		}
+		NextProjectilesType_Server();
 		for (FProjectilesSettings ProjectilesSettings : ProjectileTypes)
 		{
 			SetMaxProjectilesByTypeOnWidget_Multicast(ProjectilesSettings.MaxProjectilesAmount, ProjectilesSettings.ProjectileClass);
@@ -145,110 +141,71 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 			FVector LastLocation = GetActorLocation();
 			FVector ForwardVector = GetActorForwardVector();
 			ForwardVector.X = 0;
-			//AddActorWorldOffset(ForwardVector * ForwardSpeed * DeltaTime);
-			//PlaneMesh->AddForce(ForwardVector * ForwardSpeed);
-			//PlaneMesh->AddForce(ForwardVector * ForwardSpeed);
 			float Speed = Mesh->GetPhysicsLinearVelocity().Length();
 			Mesh->AddForce(-Mesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
 			
-			//PlaneMesh->AddForce(-PlaneMesh->GetPhysicsLinearVelocity().GetSafeNormal() * Speed * Speed * DragCoefficient);
 			if (bIsSpeedUp && Fuel - FuelConsumption * DeltaTime >= 0)
 			{
 				TArray<AActor*> OverlapActors;
 				
 				GetOverlappingActors(OverlapActors, AActor::StaticClass());
-				//if(OverlapActors.Num() == 0)
+				
+					
+				FVector Velocity = Mesh->GetPhysicsLinearVelocity();
+				FVector Forward = GetActorForwardVector();
+				FVector LiftVector = -FVector::CrossProduct(GetActorRightVector(), Velocity).GetSafeNormal();
+				float LiftForce = 0.5 * Velocity.Length() * Velocity.Length() * LiftCoefficient * AirDensity;
+				Mesh->AddForce(LiftVector * LiftForce);
+					
+
+				float YOffset = FMath::Cos(FMath::DegreesToRadians(SpeedUpOffsetAngle));
+				float ZOffset = FMath::Sin(FMath::DegreesToRadians(SpeedUpOffsetAngle));
+				if (!bIsMovingForward)
 				{
-					//Mesh->SetEnableGravity(true);
-					//FVector LiftVector = GetActorUpVector();
-					//if(RotationRate > MaxRotationRate / 2)
-					{
-						FVector Velocity = Mesh->GetPhysicsLinearVelocity();
-						FVector Forward = GetActorForwardVector();
-						FVector LiftVector = -FVector::CrossProduct(GetActorRightVector(), Velocity).GetSafeNormal();
-						float LiftForce = 0.5 * Velocity.Length() * Velocity.Length() * LiftCoefficient * AirDensity;
-						Mesh->AddForce(LiftVector * LiftForce);
-					}
-
-					float YOffset = FMath::Cos(FMath::DegreesToRadians(SpeedUpOffsetAngle));
-					float ZOffset = FMath::Sin(FMath::DegreesToRadians(SpeedUpOffsetAngle));
-					if (!bIsMovingForward)
-					{
-						YOffset = -YOffset;
-					}
-					UpwardOffsetDirection = FVector(0, YOffset, ZOffset);
-					Mesh->AddForce(UpwardOffsetDirection * SpeedUpOffsetForce);
-					/*	if (ForwardSpeed + AccelerationSpeed * DeltaTime < MaxForwardSpeed)
-					{
-						ForwardSpeed += AccelerationSpeed * DeltaTime;
-					}
-					else
-					{
-						ForwardSpeed = MaxForwardSpeed;
-					}*/
-					FVector CurrentLocation = GetActorLocation();
-
-					//float Speed = FVector(CurrentLocation - LastLocation).Length();
-					//float Speed = PlaneMesh->GetPhysicsLinearVelocity().Length();
-
-					if (CurrentForceWhileSpeedUp + AccelerationForce * DeltaTime <= SpeedUpForce)
-					{
-						CurrentForceWhileSpeedUp += AccelerationForce * DeltaTime;
-					}
-					else
-					{
-						CurrentForceWhileSpeedUp = SpeedUpForce;
-					}
-					Mesh->AddForce(ForwardVector * CurrentForceWhileSpeedUp);
-
-					if (RotationRate + RotationAcceleration * DeltaTime <= MaxRotationRate)
-					{
-						RotationRate += RotationAcceleration * DeltaTime;
-					}
-					else
-					{
-						RotationRate = MaxRotationRate;
-					}
-					//RotationRate = UKismetMathLibrary::MapRangeClamped(CurrentForceWhileSpeedUp, EnginePower, SpeedUpForce, MinRotationRate, MaxRotationRate);
-					//RotationRate = UKismetMathLibrary::MapRangeClamped(CurrentForceWhileSpeedUp, 0, SpeedUpForce, MinRotationRate, MaxRotationRate);
-					float NewRotationRate;
-					if (bIsMovingForward)
-					{
-						NewRotationRate = -RotationRate;
-					}
-					else
-					{
-						NewRotationRate = RotationRate;
-					}
-					AddActorWorldRotation(FRotator(0, 0, NewRotationRate) * DeltaTime);
-					Fuel -= FuelConsumption * DeltaTime;
-					OnFuelChanged.Broadcast(Fuel);
+					YOffset = -YOffset;
 				}
-				/*else
+				UpwardOffsetDirection = FVector(0, YOffset, ZOffset);
+				Mesh->AddForce(UpwardOffsetDirection * SpeedUpOffsetForce);
+				FVector CurrentLocation = GetActorLocation();
+
+
+				if (CurrentForceWhileSpeedUp + AccelerationForce * DeltaTime <= SpeedUpForce)
 				{
-					Mesh->SetEnableGravity(false);
-				}*/
+					CurrentForceWhileSpeedUp += AccelerationForce * DeltaTime;
+				}
+				else
+				{
+					CurrentForceWhileSpeedUp = SpeedUpForce;
+				}
+				Mesh->AddForce(ForwardVector * CurrentForceWhileSpeedUp);
+
+				if (RotationRate + RotationAcceleration * DeltaTime <= MaxRotationRate)
+				{
+					RotationRate += RotationAcceleration * DeltaTime;
+				}
+				else
+				{
+					RotationRate = MaxRotationRate;
+				}
+				float NewRotationRate;
+				if (bIsMovingForward)
+				{
+					NewRotationRate = -RotationRate;
+				}
+				else
+				{
+					NewRotationRate = RotationRate;
+				}
+				AddActorWorldRotation(FRotator(0, 0, NewRotationRate) * DeltaTime);
+				Fuel -= FuelConsumption * DeltaTime;
+				OnFuelChanged.Broadcast(Fuel);
+				
 			}
 			else
 			{
-				//FVector LiftVector = PlaneMesh->GetPhysicsLinearVelocity() * -1.f;
-				FVector LiftVector = FVector(0, 0, 1);
-				float LiftForce = 0.5 * Speed * Speed * LiftCoefficient * AirDensity;
-				for (FVector Point : LiftForcePoints)
-				{
-					//PlaneMesh->AddForceAtLocation(LiftVector * LiftForce, Point);
-
-					//PlaneMesh->AddForceAtLocation(-LiftVector * LiftForce * LiftForce * LiftDragCoef, Point);
-					/*FVector AngularVelocity = PlaneMesh->GetPhysicsAngularVelocityInDegrees();
-					FVector AngularDampingTorque = -(AngularVelocity * AngularVelocity) * LiftDragCoef;
-					PlaneMesh->AddTorqueInDegrees(AngularDampingTorque, NAME_None, true);*/
-				}
-
-				//CurrentForceWhileSpeedUp = EnginePower;
-
 				SetIsSpeedUp_Server(false);
-				//PlaneMesh->AddForce(ForwardVector * EnginePower);
-				if (!bIsFalling)
+
+				if (!bIsFalling && !HitedActor)
 				{
 					FVector RotationAxis = FVector(1, 0, 0);
 
@@ -265,19 +222,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 					float DotProductFallingForward = FVector::DotProduct(CurrentOrientation.Vector(), TargetOrientationFallingForward.Vector());
 					float AngularDistanceToFlallingForward = FMath::Acos(FMath::Clamp(DotProductFallingForward, -1.0f, 1.0f));
 
-					/*FQuat FlipFromForwardQuat = FQuat(FRotator(0, -90, -180));
-					FQuat FlipFromBackwardQuat = FQuat(FRotator(0, 90, 180));
-					FlipFromForwardQuat.Normalize();
-					FlipFromBackwardQuat.Normalize();*/
-					//float DotProductFlipFromForward = FVector::DotProduct(CurrentOrientation.Vector(), FlipFromForwardQuat.Vector());
-					//float AngularDistanceToFlipFromForward = FMath::Acos(FMath::Clamp(DotProductFlipFromForward, -1.0f, 1.0f));
-					//float DotProductFlipFromBackward = FVector::DotProduct(CurrentOrientation.Vector(), FlipFromBackwardQuat.Vector());
-					//float AngularDistanceToFlipFromBackward = FMath::Acos(FMath::Clamp(DotProductFlipFromBackward, -1.0f, 1.0f));
-					//if (AngularDistanceToInverted < AngularDistanceToAligned)
-					/*if(bIsMovingForward && GetActorRotation().Pitch > -90 && GetActorRotation().Pitch < 0 && FMath::IsNearlyEqual(GetActorRotation().Yaw, -90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, -180, 1)
-						|| !bIsMovingForward && !(GetActorRotation().Pitch > -90 && GetActorRotation().Pitch < 0 && FMath::IsNearlyEqual(GetActorRotation().Yaw, 90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, 180, 1)))*/
-					/*if (bIsMovingForward && FMath::RadiansToDegrees(AngularDistanceToFlipFromForward) < 90 && GetActorRotation().Pitch < 0
-						|| !bIsMovingForward && !(FMath::RadiansToDegrees(AngularDistanceToFlipFromBackward) < 90 && GetActorRotation().Pitch < 0))*/
 					float CurrentAngularDistance;
 					bool bIsRotatedDown = false;
 					if (AngularDistanceToFallingBackward < AngularDistanceToFlallingForward)
@@ -287,16 +231,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 						{
 							bIsRotatedDown = true;
 						}
-						/*if (GetActorRotation().Pitch > 0 && GetActorRotation().Pitch < 90 && FMath::IsNearlyEqual(GetActorRotation().Yaw, 90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, 180, 1))
-						{
-							PlaneMesh->SetEnableGravity(false);
-							PlaneMesh->AddForce(ForwardVector * AccelerationForce);
-						}
-						else
-						{
-							PlaneMesh->SetEnableGravity(true);
-							PlaneMesh->AddForce(ForwardVector * EnginePower);
-						}*/
 						if (bIsMovingForward)
 						{
 							bIsMovingForward = false;
@@ -308,32 +242,8 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 							else
 							{
 								bReturnFlip = !bReturnFlip;
-								//UE_LOG(LogTemp, Warning, TEXT("bReturnFlip = %f"), bReturnFlip);
 							}
 						}
-						//else
-						//{
-						//
-						//	//FQuat NewRotation;
-						//	//NewRotation = FQuat::Slerp(CurrentOrientation, TargetOrientationInverted, FMath::DegreesToRadians(AlignSpeed * DeltaTime));
-						//	//SetActorRotation(NewRotation);		
-						//	FQuat RotationQuat;
-						//	float DeltaRotation = FMath::DegreesToRadians(CurrentFallRotationSpeed) * DeltaTime;
-						//	if (AngularDistanceToFallingBackward - DeltaRotation < 0)
-						//	{
-						//		bIsFalling = true;
-						//		RotationQuat = FQuat(RotationAxis, AngularDistanceToFallingBackward);
-						//	}
-						//	else
-						//	{
-						//		if (GetActorRotation().Pitch < -55 && GetActorRotation().Pitch >= -90)
-						//		{
-						//			DeltaRotation = -DeltaRotation;
-						//		}
-						//		RotationQuat = FQuat(RotationAxis, DeltaRotation);
-						//	}
-						//	AddActorWorldRotation(RotationQuat);
-						//}
 					}
 					else
 					{
@@ -342,16 +252,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 						{
 							bIsRotatedDown = true;
 						}
-						/*	if (GetActorRotation().Pitch > 0 && GetActorRotation().Pitch < 90 && FMath::IsNearlyEqual(GetActorRotation().Yaw, -90, 1) && FMath::IsNearlyEqual(GetActorRotation().Roll, -180, 1))
-						{
-							PlaneMesh->SetEnableGravity(false);
-							PlaneMesh->AddForce(ForwardVector* AccelerationForce);
-						}
-						else
-						{
-							PlaneMesh->SetEnableGravity(true);
-							PlaneMesh->AddForce(ForwardVector * EnginePower);
-						}*/
 						if (!bIsMovingForward)
 						{
 							bIsMovingForward = true;
@@ -367,25 +267,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 							}
 							
 						}
-						/*else
-						{
-							FQuat RotationQuat;
-							float DeltaRotation = FMath::DegreesToRadians(CurrentFallRotationSpeed) * DeltaTime;
-							if (AngularDistanceToFlallingForward - DeltaRotation < 0)
-							{
-								bIsFalling = true;
-								RotationQuat = FQuat(RotationAxis, AngularDistanceToFlallingForward);
-							}
-							else
-							{
-								if (GetActorRotation().Pitch > -55 && GetActorRotation().Pitch <= 90)
-								{
-									DeltaRotation = -DeltaRotation;
-								}
-								RotationQuat = FQuat(RotationAxis, DeltaRotation);
-							}
-							AddActorWorldRotation(RotationQuat);
-						}*/
 					}
 					
 					CurrentForceWhileSpeedUp = MinSpeedUpForce;
@@ -422,16 +303,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 						RotationQuat = FQuat(RotationAxis, DeltaRotation);
 					}
 					AddActorWorldRotation(RotationQuat);
-					/*	if (GetActorRotation().Pitch > 0)
-						{
-							PlaneMesh->SetEnableGravity(false);
-							PlaneMesh->AddForce(ForwardVector * AccelerationForce);
-						}
-						else
-						{
-							PlaneMesh->SetEnableGravity(true);
-							PlaneMesh->AddForce(ForwardVector * EnginePower);
-						}*/
 				}
 			}
 
@@ -441,17 +312,6 @@ void AFlappyPlane::MovementTick(float DeltaTime)
 				{
 					Mesh->AddForce(ForwardVector * MovementForceWhileFlip);
 				}
-
-				//FQuat CurrentQuat = GetActorQuat();
-				//FQuat TargetQuat = FQuat(RotationAxis, FMath::DegreesToRadians(180)) * InitialRotationForFlip;
-				//float DotProduct = CurrentQuat.X * TargetQuat.X + CurrentQuat.Y * TargetQuat.Y + CurrentQuat.Z * TargetQuat.Z + CurrentQuat.W * TargetQuat.W;
-				//float AngularDistance = FMath::Acos(FMath::Clamp(DotProduct, -1.0f, 1.0f));
-				//if (FMath::IsNearlyZero(AngularDistance, 0.2f))
-
-				//FQuat NewRotation = FQuat::Slerp(CurrentQuat, TargetQuat, FlipSpeed * DeltaTime);
-				//SetActorRotation(NewRotation);			
-
-				//PlaneMesh->AddForce(ForwardVector* CurrentForceWhileSpeedUp);
 				FVector RotationAxis = GetActorForwardVector();
 				FQuat RotationQuat;
 				float CurrentFlipSpeed;
@@ -538,6 +398,8 @@ void AFlappyPlane::Fire()
 				GetWorld()->SpawnActor<AProjectile>(CurrentProjectilesType.ProjectileClass, SpawnTransform, SpawnParams);
 				GetWorld()->GetTimerManager().SetTimer(FireTimer, this, &AFlappyPlane::Fire, CurrentProjectilesType.FireRate, false);
 
+				SpawnSoundAtLocation_Multicast(CurrentProjectilesType.FireSound, SpawnTransform.GetLocation(), SpawnTransform.Rotator());
+				SpawnFXAtLocation_Multicast(CurrentProjectilesType.FireFX, SpawnTransform.GetLocation(), SpawnTransform.Rotator());
 				if (!bHasInfiniteAmmo)
 				{
 					ProjectilesAmount--;
@@ -588,79 +450,6 @@ void AFlappyPlane::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 {
 	if(GetLocalRole() == ROLE_Authority)
 	{
-		//if (OtherActor)
-		//{		
-		//	FVector SelfVelocity = Mesh->GetPhysicsLinearVelocity();
-		//	if (OtherActor->IsA(AFlappyPlane::StaticClass()))
-		//	{
-		//		if (this < OtherActor) //Logic must run once
-		//		{
-		//			if(AFlappyPlane* OtherPlane = Cast<AFlappyPlane>(OtherActor))
-		//			{
-		//				FVector OtherVelocity = OtherPlane->Mesh->GetPhysicsLinearVelocity();
-		//				//Find collsion rotation
-		//				FRotator TargetRotationForSelf = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), OtherActor->GetActorLocation());
-		//				float DeltaRotationForSelf = FMath::RadiansToDegrees(GetActorQuat().AngularDistance(FQuat(TargetRotationForSelf)));
-		//				FRotator TargetRotationForOther = UKismetMathLibrary::FindLookAtRotation(OtherActor->GetActorLocation(), GetActorLocation());
-		//				float DeltaRotationForOther = FMath::RadiansToDegrees(OtherPlane->GetActorQuat().AngularDistance(FQuat(TargetRotationForOther)));
-		//				
-		//				if (DeltaRotationForSelf < 45 && DeltaRotationForOther > 45)
-		//				{
-		//					float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
-		//					float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
-		//					FVector ImpulceDirection = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
-		//					Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
-		//					ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForOther);
-		//				}
-		//				if (DeltaRotationForOther < 45 && DeltaRotationForSelf > 45)
-		//				{
-		//					float SelfSpeedRelativeOtherVelocity = -FVector::DotProduct(OtherVelocity.GetSafeNormal(), SelfVelocity);
-		//					float OverallSpeed = OtherVelocity.Length() + SelfSpeedRelativeOtherVelocity;
-		//					FVector ImpulceDirection = OtherPlane->Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-		//					Mesh->AddImpulse(OverallSpeed * ImpulceDirection * CollisionImpulceForOther);
-		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * ImpulceDirection * -CollisionImpulceForSelf);
-		//					ReceiveDamage(OverallSpeed * CollisionDamageForOther);
-		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-		//				}
-		//				if (DeltaRotationForSelf < 45 && DeltaRotationForOther < 45)
-		//				{
-		//					float OtherSpeedRelativeSelfVelocity = -FVector::DotProduct(SelfVelocity.GetSafeNormal(), OtherVelocity);
-		//					float OverallSpeed = SelfVelocity.Length() + OtherSpeedRelativeSelfVelocity;
-		//					FVector Direction = (OtherPlane->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		//					OtherPlane->Mesh->AddImpulse(OverallSpeed * Direction * CollisionImpulceForSelf);
-		//					Mesh->AddImpulse(OverallSpeed * Direction * -CollisionImpulceForSelf);
-		//					ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-		//					OtherPlane->ReceiveDamage(OverallSpeed * CollisionDamageForSelf);
-		//				}
-		//			}
-		//		}				
-		//	}
-		//	else if(!OtherActor->IsA(AProjectile::StaticClass()))
-		//	{
-		//		//FVector Direction = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		//	/*	FVector Direction = Mesh->GetPhysicsLinearVelocity().GetSafeNormal();
-
-		//		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		//		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		//		Mesh->AddImpulse(Direction * -CollisionImpulceForSelf);*/
-
-		//		ReceiveDamage(SelfVelocity.Length() * CollisionDamageForSelf);
-
-		//		/*FVector Velocity = Mesh->GetPhysicsLinearVelocity();
-		//		FVector SurfaceNormal = SweepResult.ImpactNormal.GetSafeNormal();
-		//		float ImpactAngle = FMath::Acos(FVector::DotProduct(SweepResult.ImpactNormal, -LastVelocity.GetSafeNormal()));
-		//		FVector ImpulsDirection = Velocity - 2 * FVector::DotProduct(Velocity, SurfaceNormal) * SurfaceNormal;
-		//		ImpulsDirection.Normalize();
-		//		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + ImpulsDirection * 2000.f, FColor::Red, false, 3.f);
-		//		Mesh->AddImpulse(ImpulsDirection * CollisionImpulceForSelf);*/
-
-		//		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		//		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		//	}
-		//}
-
 		LastVelocity = Mesh->GetPhysicsLinearVelocity();
 		//LastRotation = GetActorQuat();
 	}
@@ -673,22 +462,30 @@ void AFlappyPlane::SetMaxProjectilesByTypeOnWidget_Multicast_Implementation(floa
 
 void AFlappyPlane::NextProjectilesType_Server_Implementation()
 {
-	for (int32 i = 0; i < ProjectileTypes.Num(); i++)
+	if(CurrentProjectilesType.ProjectileClass)
 	{
-		if (CurrentProjectilesType.ProjectileClass == ProjectileTypes[i].ProjectileClass)
+		for (int32 i = 0; i < ProjectileTypes.Num(); i++)
 		{
-			ProjectileTypes[i].ProjectilesAmount = ProjectilesAmount;
-			if (ProjectileTypes.IsValidIndex(i + 1))
+			if (CurrentProjectilesType.ProjectileClass == ProjectileTypes[i].ProjectileClass)
 			{
-				CurrentProjectilesType = ProjectileTypes[i + 1];
+				ProjectileTypes[i].ProjectilesAmount = ProjectilesAmount;
+				if (ProjectileTypes.IsValidIndex(i + 1))
+				{
+					CurrentProjectilesType = ProjectileTypes[i + 1];
+				}
+				else
+				{
+					CurrentProjectilesType = ProjectileTypes[0];
+				}
+				ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
+				return;
 			}
-			else
-			{
-				CurrentProjectilesType = ProjectileTypes[0];
-			}
-			ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
-			return;
 		}
+	}
+	else
+	{
+		CurrentProjectilesType = ProjectileTypes[0];
+		ProjectilesAmount = CurrentProjectilesType.ProjectilesAmount;
 	}
 }
 
@@ -873,5 +670,21 @@ void AFlappyPlane::OnHit(AActor* SelfActor, AActor* OtherActor, FVector NormalIm
 		HitedActor = OtherActor;
 
 		//SetActorRotation(LastRotation);
+	}
+}
+
+void AFlappyPlane::SpawnFXAtLocation_Multicast_Implementation(UParticleSystem* FX, FVector Location, FRotator Rotation)
+{
+	if (FX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FX, Location, Rotation, true);
+	}
+}
+
+void AFlappyPlane::SpawnSoundAtLocation_Multicast_Implementation(USoundBase* Sound, FVector Location, FRotator Rotation)
+{
+	if(Sound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, Location, Rotation, 1);
 	}
 }

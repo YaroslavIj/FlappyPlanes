@@ -25,6 +25,10 @@ public:
 	int32 ProjectilesAmount = 50;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MaxProjectilesAmount = 50;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* FireSound = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* FireFX = nullptr;
 };
 
 UCLASS()
