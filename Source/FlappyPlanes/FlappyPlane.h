@@ -136,6 +136,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	TArray<FProjectilesSettings> ProjectileTypes;
 
+
 	//Sounds
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")
 	USoundBase* FlightSound = nullptr;

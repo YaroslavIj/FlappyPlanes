@@ -24,7 +24,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	FTimerHandle UpdateTimer;
+	UPROPERTY(EditDefaultsOnly)
+	float UpdateRate = 0.1f;
 	UPROPERTY(EditDefaultsOnly)
 	float MeshResolution = 1.f;
 	UPROPERTY(EditDefaultsOnly)
@@ -35,7 +37,7 @@ protected:
 	float TracesAngle = -90.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	UProceduralMeshComponent* ProceduralMesh = nullptr;
+	UProceduralMeshComponent* ProclMesh = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TEnumAsByte<ECollisionChannel> TraceChannel = ECollisionChannel::ECC_GameTraceChannel1;
@@ -45,6 +47,19 @@ protected:
 	UMaterialInterface* ShadowMaterial = nullptr;
 	UPROPERTY(BlueprintReadWrite)
 	FVector TraceDirection;
+
+	TArray<int32> ShadowVerticesInSectionsCount;
+	int32 MainVerticesCount;
+
+	UFUNCTION()
+	void Update();
+
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 CountOfUpdates = 0;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CountOfDestroys = 0;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
