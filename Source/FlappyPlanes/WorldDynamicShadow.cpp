@@ -22,6 +22,19 @@ void AWorldDynamicShadow::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AActor* Camera = Cast<AActor>(Plane->PawnOwner);
+	if(Camera)
+	{
+		float DistanceToCamara = FMath::Abs(Plane->GetActorLocation().X - Camera->GetActorLocation().X);
+		FVector CameraDirection = Camera->GetActorForwardVector();
+		FVector CenterDeprojected = Camera->GetActorLocation() + CameraDirection * DistanceToCamara;
+		SetActorLocation(CenterDeprojected);
+	}
+
+	/*if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &AWorldDynamicShadow::Update, UpdateRate, true);
+	}*/
 	//Update();
 }
 
@@ -72,16 +85,25 @@ void AWorldDynamicShadow::Update()
 				TraceDirection.Y = FMath::Cos(FMath::DegreesToRadians(TracesAngle));
 				TraceDirection.Z = FMath::Sin(FMath::DegreesToRadians(TracesAngle));
 
+				ProclMesh->ClearAllMeshSections();
+
+				float ZOffset = CenterDeprojected.Z - GetActorLocation().Z;
+				float YOffset = CenterDeprojected.Y - GetActorLocation().Y;
+				int32 ResolutionsCountY = YOffset / MeshResolution;
+				YOffset = ResolutionsCountY * MeshResolution;
+				UE_LOG(LogTemp, Warning, TEXT("YOffset = %f"), YOffset);
+				AddActorWorldOffset(FVector(0, YOffset, ZOffset));
+
 				for (int32 i = 0; i < TracesCount; i++)
 				{
 					FVector LocalStart = TracesLocalStartLocation + FVector(0, MeshResolution * i, 0);
-					FVector Start = CenterDeprojected + LocalStart;
+					FVector Start = GetActorLocation() + LocalStart;
 
 					MainVertices.Add(LocalStart);
 
 
 					FVector LocalEnd = LocalStart + TraceDirection * MeshZDistance / FMath::Abs(TraceDirection.Z) + TraceDirection * ZDistance / FMath::Abs(TraceDirection.Z);
-					FVector End = CenterDeprojected + LocalEnd;
+					FVector End = GetActorLocation() + LocalEnd;
 
 					FHitResult Hit;
 					GetWorld()->LineTraceSingleByChannel(Hit, Start, End, TraceChannel);
@@ -97,7 +119,7 @@ void AWorldDynamicShadow::Update()
 					}
 				}
 				UE_LOG(LogTemp, Warning, TEXT("MainVertices before optimization: %d"), MainVertices.Num());
-				for (int32 i = MainVertices.Num(); i > 0; i -= 2)
+				/*for (int32 i = MainVertices.Num(); i > 0; i -= 2)
 				{
 					if (MainVertices.IsValidIndex(i - 1) && MainVertices.IsValidIndex(i + 1) && MainVertices.IsValidIndex(i + 3))
 					{
@@ -118,7 +140,7 @@ void AWorldDynamicShadow::Update()
 							MainVertices.RemoveAt(i);
 						}
 					}
-				}
+				}*/
 				UE_LOG(LogTemp, Warning, TEXT("MainVertices after optimization: %d"), MainVertices.Num());
 
 				for (int32 i = 0; i < MainVertices.Num(); i++)
@@ -140,7 +162,7 @@ void AWorldDynamicShadow::Update()
 				TArray<FVector2D> UV0;
 				TArray<FLinearColor> VertexColors;
 				TArray<FProcMeshTangent>Tangents;
-				ProclMesh->ClearAllMeshSections();
+				
 				ProclMesh->CreateMeshSection_LinearColor(0, MainVertices, MainTriangles, Normals, UV0, VertexColors, Tangents, false);
 				//ProceduralMesh->UpdateMeshSection_LinearColor(0, MainVertices, Normals, UV0, VertexColors, Tangents, false);
 				if (MainMaterial)
@@ -186,7 +208,7 @@ void AWorldDynamicShadow::Update()
 							ShadowVertices.Add(LocalStart);
 
 						}
-						for (int32 j = ShadowVertices.Num(); j > 0; j -= 2)
+						/*for (int32 j = ShadowVertices.Num(); j > 0; j -= 2)
 						{
 							if (ShadowVertices.IsValidIndex(j - 1) && ShadowVertices.IsValidIndex(j + 1) && ShadowVertices.IsValidIndex(j + 3))
 							{
@@ -207,7 +229,7 @@ void AWorldDynamicShadow::Update()
 									ShadowVertices.RemoveAt(j);
 								}
 							}
-						}
+						}*/
 						for (int32 j = 0; j < ShadowVertices.Num(); j++)
 						{
 							if (j % 2 == 1)
@@ -230,7 +252,9 @@ void AWorldDynamicShadow::Update()
 						}
 					}
 				}
-				SetActorLocation(CenterDeprojected);
+
+				
+				//SetActorLocation(CenterDeprojected);
 			}
 		}
 	}
@@ -248,7 +272,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//	FVector CenterDeprojected = Camera->GetActorLocation() + CameraDirection * DistanceToCamara;
 	//	SetActorLocation(CenterDeprojected);
 	//}
-
+	//
 	//if()
 	//UGameViewportClient* Viewport = GEngine->GameViewport;
 	//APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -266,7 +290,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//		//DrawDebugLine(GetWorld(), WorldLocation, WorldLocation + WorldDirection * 1000, FColor::Red, false, 0.f);
 	//		//PC->DeprojectScreenPositionToWorld(ScreenSize.X, ScreenSize.Y, WorldLocation, WorldDirection);
 	//		FVector CameraDirection = Camera->GetActorForwardVector();
-
+	//
 	//		float cos = FVector::DotProduct(CameraDirection, WorldDirection);
 	//		float tg = FMath::Tan(FMath::Acos(cos));
 	//		float HalfDiagonalLenght = tg * DistanceToCamara;
@@ -286,23 +310,23 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//		FVector TracesLocalStartLocation = FVector(0, -YDistance, MeshZDistance);
 	//		//FVector TracesStartLocation = CenterDeprojected + TracesLocalStartLocation;
 	//		TArray<FVector> MainVertices;
-
+	//
 	//		//FVector TraceDirection;
 	//		TraceDirection.X = 0;
 	//		TraceDirection.Y = FMath::Cos(FMath::DegreesToRadians(TracesAngle));
 	//		TraceDirection.Z = FMath::Sin(FMath::DegreesToRadians(TracesAngle));
-
+	//
 	//		for (int32 i = 0; i < TracesCount; i++)
 	//		{
 	//			FVector LocalStart = TracesLocalStartLocation + FVector(0, MeshResolution * i, 0);
 	//			FVector Start = CenterDeprojected + LocalStart;
-
+	//
 	//			MainVertices.Add(LocalStart);
-
-
+	//
+	//
 	//			FVector LocalEnd = LocalStart + TraceDirection * MeshZDistance / FMath::Abs(TraceDirection.Z) + TraceDirection * ZDistance / FMath::Abs(TraceDirection.Z);
 	//			FVector End = CenterDeprojected + LocalEnd;
-
+	//
 	//			FHitResult Hit;
 	//			GetWorld()->LineTraceSingleByChannel(Hit, Start, End, TraceChannel);
 	//			//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 0.f);
@@ -323,7 +347,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//			if (MainVertices.IsValidIndex(i - 1) && MainVertices.IsValidIndex(i + 1) && MainVertices.IsValidIndex(i + 3))
 	//			{
 	//				TArray<FVector> VerticesToCheck = { MainVertices[i - 1], MainVertices[i + 3] };
-
+	//
 	//				bool bNeedToLeave = false;
 	//				for (FVector OtherVertex : VerticesToCheck)
 	//				{
@@ -331,7 +355,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//					{
 	//						bNeedToLeave = true;
 	//					}
-
+	//
 	//				}
 	//				if (!bNeedToLeave)
 	//				{
@@ -341,7 +365,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//			}
 	//		}*/
 	//		UE_LOG(LogTemp, Warning, TEXT("MainVertices after optimization: %d"), MainVertices.Num());
-
+//
 	//		TArray<FVector> Normals;
 	//		TArray<FVector2D> UV0;
 	//		TArray<FLinearColor> VertexColors;
@@ -381,7 +405,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//			ProceduralMesh->SetMaterial(0, MainMaterial);
 	//			MainVerticesCount = MainVertices.Num();
 	//		}
-
+//
 	//		TArray<int32> Sections;
 	//		for (int32 i = 1; i < MainVertices.Num(); i += 2)
 	//		{
@@ -424,23 +448,23 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//				{
 	//					FVector LocalStart = MainVertices[j];
 	//					//FVector Start = CenterDeprojected + LocalStart;
-
+//
 	//					float Length = FMath::Abs((LocalStart.Z + ZDistance) / FMath::Cos(FMath::DegreesToRadians(TracesAngle)));
-
+//
 	//					FVector LocalEnd = LocalStart + TraceDirection * Length;
 	//					//DrawDebugSphere(GetWorld(), CenterDeprojected + LocalEnd, 10, 10, FColor::Red);
 	//					//DrawDebugLine(GetWorld(), CenterDeprojected + LocalStart, CenterDeprojected + LocalEnd, FColor::Red, false, 0.f);
 	//					//ShadowVertices.Add(FVector(LocalStart.X, LocalStart.Y, -ZDistance));
 	//					ShadowVertices.Add(LocalEnd);
 	//					ShadowVertices.Add(LocalStart);
-
+//
 	//				}
 	//				/*for (int32 j = ShadowVertices.Num(); j > 0; j -= 2)
 	//				{
 	//					if (ShadowVertices.IsValidIndex(j - 1) && ShadowVertices.IsValidIndex(j + 1) && ShadowVertices.IsValidIndex(j + 3))
 	//					{
 	//						TArray<FVector> VerticesToCheck = { ShadowVertices[j - 1], ShadowVertices[j + 3] };
-
+//
 	//						bool bNeedToLeave = false;
 	//						for (FVector OtherVertex : VerticesToCheck)
 	//						{
@@ -448,7 +472,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//							{
 	//								bNeedToLeave = true;
 	//							}
-
+//
 	//						}
 	//						if (!bNeedToLeave)
 	//						{
@@ -489,6 +513,7 @@ void AWorldDynamicShadow::Tick(float DeltaTime)
 	//		SetActorLocation(CenterDeprojected);
 	//	}
 	//}
+	
 	Update();
 }
 
