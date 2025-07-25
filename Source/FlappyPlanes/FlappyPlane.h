@@ -135,7 +135,8 @@ protected:
 	float CollisionDamageForOther = 0.016f;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
 	TArray<FProjectilesSettings> ProjectileTypes;
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
+	float FireDispersionDegreese = 5.f;
 
 	//Sounds
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sounds")

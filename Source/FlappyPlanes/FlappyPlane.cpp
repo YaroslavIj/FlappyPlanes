@@ -36,7 +36,6 @@ void AFlappyPlane::BeginPlay()
 {
 	Super::BeginPlay();
 	
-
 	OnProjectilesAmountChanged.Broadcast(ProjectilesAmount);
 
 	if(GetLocalRole() == ROLE_Authority)
@@ -392,7 +391,11 @@ void AFlappyPlane::Fire()
 				FTransform SpawnTransform;
 				FVector RelativeLocation = GetActorForwardVector() * FireLocation.X + GetActorRightVector() * FireLocation.Y + GetActorUpVector() * FireLocation.Z;
 				SpawnTransform.SetLocation(GetActorLocation() + FireLocation);
-				SpawnTransform.SetRotation(GetActorQuat());
+				
+				float Dispersion = FMath::RandRange(-FireDispersionDegreese, FireDispersionDegreese);
+				FRotator SpawnRotator = GetActorRotation() + FRotator(Dispersion, 0, 0);
+				SpawnTransform.SetRotation(FQuat(SpawnRotator));
+
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.Owner = this;
 				GetWorld()->SpawnActor<AProjectile>(CurrentProjectilesType.ProjectileClass, SpawnTransform, SpawnParams);
